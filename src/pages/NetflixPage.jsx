@@ -1487,10 +1487,10 @@ function NetflixPage() {
       )}
 
       <Box
-        sx={{
+        sx={{ 
           position: 'fixed',
           bottom: 20,
-          left: '42%',
+          left: '50%',
           transform: 'translateX(-50%)',
           backdropFilter: 'blur(10px)',
           borderRadius: '20px',
@@ -1502,12 +1502,12 @@ function NetflixPage() {
           justifyContent: 'center',
           zIndex: 1000,
           transition: 'transform 0.3s ease',
-          animation: 'float 3s ease-in-out infinite',
+          /*animation: 'float 3s ease-in-out infinite',
           '@keyframes float': {
             '0%': { transform: 'translateY(0)' },
             '50%': { transform: 'translateY(-5px)' },
             '100%': { transform: 'translateY(0)' },
-          },
+          },*/
         }}
       >
         <ToggleButtonGroup
