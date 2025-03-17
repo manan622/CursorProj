@@ -17,6 +17,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MovieIcon from '@mui/icons-material/Movie';
 import TvIcon from '@mui/icons-material/Tv';
 import { useState, useEffect } from 'react';
+import ApiSourcePopup from '../components/Netflix/ApiSourcePopup';
 
 const TMDB_API_KEY = 'da914409e3ab4f883504dc0dbf9d9917';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -59,9 +60,18 @@ function NetflixPage() {
   const [watchedHistory, setWatchedHistory] = useState([]); // State for watched history
   const [isMobileMode, setIsMobileMode] = useState(false); // State for mobile mode toggle
   const [view, setView] = useState('movies'); // State to track view type
+  const [isApiPopupOpen, setIsApiPopupOpen] = useState(false);
+  const [apiSource, setApiSource] = useState('tmdb'); // Default API source
 
   // Use media query to determine if the screen is small
   const isSmallScreen = useMediaQuery('(max-width:600px)');
+
+  const apiSources = [
+    { id: 'tmdb', name: 'TMDB (Default)', url: 'https://moviesapi.club' },
+    { id: 'netflix', name: 'Netflix API', url: 'https://player.autoembed.cc/embed' },
+    { id: 'hulu', name: 'Hulu API', url: 'https://hulu-api.example.com' },
+    { id: 'prime', name: 'Prime Video API', url: 'https://primevideo-api.example.com' },
+  ];
 
   const handleContentTypeChange = (event, newContentType) => {
     if (newContentType !== null) {
@@ -268,7 +278,7 @@ function NetflixPage() {
 
   useEffect(() => {
     fetchMovies();
-  }, []);
+  }, [apiSource]);
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -294,6 +304,19 @@ function NetflixPage() {
 
   const toggleView = () => {
     setView((prevView) => (prevView === 'movies' ? 'tvShows' : 'movies'));
+  };
+
+  const handlePlay = (movie) => {
+    const selectedApi = apiSources.find(api => api.id === apiSource);
+    let url;
+    if (movie.mediaType === 'tv') {
+      url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
+    } else {
+      url = `${selectedApi.url}/movie/${movie.id}`;
+    }
+    window.open(url, '_blank');
+    // Add to watched history
+    setWatchedHistory(prev => [...prev, { id: movie.id, title: movie.title, mediaType: movie.mediaType }]);
   };
 
   if (loading) {
@@ -375,18 +398,6 @@ function NetflixPage() {
       window.open(`https://www.themoviedb.org/movie/${movie.id}`, '_blank');
     };
 
-    const handlePlay = () => {
-      let url;
-      if (movie.mediaType === 'movie') {
-        url = `https://moviesapi.club/movie/${movie.id}`;
-      } else if (movie.mediaType === 'tv') {
-        url = `https://moviesapi.club/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
-      }
-      window.open(url, '_blank');
-      // Add to watched history
-      setWatchedHistory(prev => [...prev, { id: movie.id, title: movie.title, mediaType: movie.mediaType }]);
-    };
-
     return (
       <Drawer
         anchor="right"
@@ -429,7 +440,7 @@ function NetflixPage() {
                 left: 0,
                 right: 0,
                 p: 2,
-                background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                background: 'linear-gradient(to bottom, rgba(0,0,0,0.8), transparent)',
                 borderRadius: '0 0 8px 8px',
               }}
             >
@@ -437,7 +448,7 @@ function NetflixPage() {
                 <Button
                   variant="contained"
                   startIcon={<PlayArrowIcon />}
-                  onClick={handlePlay}
+                  onClick={() => handlePlay(movie)}
                   sx={{
                     bgcolor: 'white',
                     color: 'black',
@@ -867,6 +878,9 @@ function NetflixPage() {
             }}
           >
             <RefreshIcon />
+          </IconButton>
+          <IconButton onClick={() => setIsApiPopupOpen(true)} sx={{ color: 'white', ml: 'auto' }}>
+            <LanguageIcon />
           </IconButton>
         </Toolbar>
       </AppBar>
@@ -1502,12 +1516,6 @@ function NetflixPage() {
           justifyContent: 'center',
           zIndex: 1000,
           transition: 'transform 0.3s ease',
-          /*animation: 'float 3s ease-in-out infinite',
-          '@keyframes float': {
-            '0%': { transform: 'translateY(0)' },
-            '50%': { transform: 'translateY(-5px)' },
-            '100%': { transform: 'translateY(0)' },
-          },*/
         }}
       >
         <ToggleButtonGroup
@@ -1561,6 +1569,17 @@ function NetflixPage() {
           zIndex: 999, // Ensure it's above other content
           backdropFilter: 'blur(10px)', // Add blur effect
         }}
+      />
+
+      {/* API Source Popup */}
+      <ApiSourcePopup
+        open={isApiPopupOpen}
+        onClose={() => setIsApiPopupOpen(false)}
+        currentApi={apiSource}
+        onApiChange={(newApi) => {
+          setApiSource(newApi);
+        }}
+        apiSources={apiSources}
       />
     </Box>
   );
