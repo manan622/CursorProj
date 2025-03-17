@@ -787,6 +787,9 @@ function NetflixPage() {
           '0%': { opacity: 0 },
           '100%': { opacity: 1 },
         },
+        scrollBehavior: 'smooth',
+        overflowY: 'auto',
+        height: '100vh',
       }}
     >
       <AppBar 
