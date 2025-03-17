@@ -29,8 +29,11 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
 
   const handleApiSelect = (apiId) => {
     setSelectedApi(apiId);
-    onApiChange(apiId); // Automatically save the selected API
-    onClose(); // Close the popup after selection
+  };
+
+  const handleSave = () => {
+    onApiChange(selectedApi);
+    onClose();
   };
 
   const handleAddNewApi = () => {
@@ -133,10 +136,7 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
               '&:hover': { 
                 backgroundColor: 'rgba(255,255,255,0.1)',
                 borderColor: 'rgba(255,255,255,0.5)'
-              },
-              backdropFilter: 'blur(10px)', // Frosted glass effect
-              borderRadius: '8px', // Rounded corners
-              padding: '10px 20px', // Padding for the button
+              }
             }}
             variant="outlined"
             fullWidth
@@ -145,6 +145,10 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
           </Button>
         )}
       </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} sx={{ color: 'white' }}>Close</Button>
+        <Button onClick={handleSave} variant="contained" sx={{ bgcolor: '#E50914', '&:hover': { bgcolor: '#b2070f' } }}>Save</Button>
+      </DialogActions>
     </Dialog>
   );
 };
