@@ -55,8 +55,8 @@ function NetflixPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [contentType, setContentType] = useState('all'); // 'all', 'movies', 'tv'
   const [isMovies, setIsMovies] = useState(true); // State to toggle between movies and TV shows
-  const [selectedSeason, setSelectedSeason] = useState(1); // State for selected season
-  const [selectedEpisode, setSelectedEpisode] = useState(1); // State for selected episode
+  const [selectedSeason, setSelectedSeason] = useState('1'); // State for selected season
+  const [selectedEpisode, setSelectedEpisode] = useState('1'); // State for selected episode
   const [watchedHistory, setWatchedHistory] = useState([]); // State for watched history
   const [isMobileMode, setIsMobileMode] = useState(false); // State for mobile mode toggle
   const [view, setView] = useState('movies'); // State to track view type
@@ -543,28 +543,92 @@ function NetflixPage() {
           <Box sx={{ mb: 3 }}>
             {movie.mediaType === 'tv' && (
               <>
-                <Select
-                  value={selectedSeason}
-                  onChange={(e) => setSelectedSeason(e.target.value)}
-                  sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '4px', mr: 2 }}
-                >
-                  {[1, 2, 3, 4, 5].map(season => (
-                    <MenuItem key={season} value={season}>
-                      Season {season}
-                    </MenuItem>
-                  ))}
-                </Select>
-                <Select
-                  value={selectedEpisode}
-                  onChange={(e) => setSelectedEpisode(e.target.value)}
-                  sx={{ color: 'white', bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}
-                >
-                  {[1, 2, 3, 4, 5].map(episode => (
-                    <MenuItem key={episode} value={episode}>
-                      Episode {episode}
-                    </MenuItem>
-                  ))}
-                </Select>
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: 'rgba(255, 255, 255, 0.1)', 
+                  borderRadius: '12px', 
+                  margin: '16px', 
+                  backdropFilter: 'blur(15px)', 
+                  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Typography variant="h6" sx={{ color: 'white', mb: 1, fontWeight: 'bold', fontSize: '1.2rem' }}>
+                    Season and Episode:
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <TextField
+                        //label="Season"
+                        type="number"
+                        value={selectedSeason}
+                        onChange={(e) => setSelectedSeason(e.target.value)}
+                        sx={{ 
+                          width: '80px',
+                          bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                          borderRadius: '8px',
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                            '& fieldset': {
+                              borderColor: 'transparent',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'transparent',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: 'transparent',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: 'white',
+                            fontSize: '1rem',
+                            padding: '10px',
+                          },
+                          '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 0.3)',
+                          },
+                        }}
+                      />
+                      <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>Season</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <TextField
+                        //label="Episode"
+                        type="number"
+                        value={selectedEpisode}
+                        onChange={(e) => setSelectedEpisode(e.target.value)}
+                        sx={{ 
+                          width: '80px',
+                          bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                          borderRadius: '8px',
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '8px',
+                            '& fieldset': {
+                              borderColor: 'transparent',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: 'transparent',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: 'transparent',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: 'white',
+                            fontSize: '1rem',
+                            padding: '10px',
+                          },
+                          '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 0.3)',
+                          },
+                        }}
+                      />
+                      <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>Episode</Typography>
+                    </Box>
+                  </Box>
+                </Box>
               </>
             )}
           </Box>
