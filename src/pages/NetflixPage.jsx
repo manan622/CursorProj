@@ -74,10 +74,10 @@ function NetflixPage() {
 
   const apiSources = [
     { id: 'tmdb', name: 'TMDB (Default)', url: 'https://moviesapi.club' },
-    { id: 'netflix', name: 'Netflix API', url: 'https://embed.su/embed' },
+    { id: 'netflix', name: 'Netflix API', url: 'https://player.autoembed.cc/embed' },
     { id: 'hulu', name: 'Hulu API', url: 'https://vidsrc.cc/v2/embed' },
     { id: 'prime', name: 'Prime Video API', url: 'https://vidlink.pro' },
-    { id: 'Hotstar', name: 'Hotstar API', url: 'https://player.autoembed.cc/embed' },
+    { id: 'Hotstar', name: 'Hotstar API', url: 'https://embed.su/embed' },
   ];
 //https://moviesapi.club
 //https://player.autoembed.cc/embed
