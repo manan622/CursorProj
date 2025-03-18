@@ -74,11 +74,16 @@ function NetflixPage() {
 
   const apiSources = [
     { id: 'tmdb', name: 'TMDB (Default)', url: 'https://moviesapi.club' },
-    { id: 'netflix', name: 'Netflix API', url: 'https://player.autoembed.cc/embed' },
-    { id: 'hulu', name: 'Hulu API', url: 'https://vidlink.pro' },
-    { id: 'prime', name: 'Prime Video API', url: 'https://vidsrc.cc/v2/embed' },
+    { id: 'netflix', name: 'Netflix API', url: 'https://embed.su/embed' },
+    { id: 'hulu', name: 'Hulu API', url: 'https://vidsrc.cc/v2/embed' },
+    { id: 'prime', name: 'Prime Video API', url: 'https://vidlink.pro' },
+    { id: 'Hotstar', name: 'Hotstar API', url: 'https://player.autoembed.cc/embed' },
   ];
-
+//https://moviesapi.club
+//https://player.autoembed.cc/embed
+//https://vidlink.pro
+//https://vidsrc.cc/v2/embed
+//https://embed.su/embed
   const handleContentTypeChange = (event, newContentType) => {
     if (newContentType !== null) {
       setContentType(newContentType);
@@ -316,7 +321,7 @@ function NetflixPage() {
     const selectedApi = apiSources.find(api => api.id === apiSource);
     let url;
     if (movie.mediaType === 'tv') {
-      if(apiSource === 'hulu' || apiSource === 'prime') {
+      if(apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
         url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${selectedEpisode}`;
       } else {
         url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
