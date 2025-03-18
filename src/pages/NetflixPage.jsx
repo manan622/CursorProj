@@ -75,8 +75,8 @@ function NetflixPage() {
   const apiSources = [
     { id: 'tmdb', name: 'TMDB (Default)', url: 'https://moviesapi.club' },
     { id: 'netflix', name: 'Netflix API', url: 'https://player.autoembed.cc/embed' },
-    { id: 'hulu', name: 'Hulu API', url: 'https://hulu-api.example.com' },
-    { id: 'prime', name: 'Prime Video API', url: 'https://primevideo-api.example.com' },
+    { id: 'hulu', name: 'Hulu API', url: 'https://vidlink.pro' },
+    { id: 'prime', name: 'Prime Video API', url: 'https://vidsrc.cc/v2/embed' },
   ];
 
   const handleContentTypeChange = (event, newContentType) => {
@@ -316,7 +316,11 @@ function NetflixPage() {
     const selectedApi = apiSources.find(api => api.id === apiSource);
     let url;
     if (movie.mediaType === 'tv') {
-      url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
+      if(apiSource === 'hulu' || apiSource === 'prime') {
+        url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${selectedEpisode}`;
+      } else {
+        url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
+      }
     } else {
       url = `${selectedApi.url}/movie/${movie.id}`;
     }
