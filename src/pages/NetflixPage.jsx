@@ -1,4 +1,4 @@
-import { Box, Typography, Grid, Card, CardMedia, CardContent, IconButton, Paper, AppBar, Toolbar, TextField, InputAdornment, Tooltip, Drawer, Button, Chip, ToggleButton, ToggleButtonGroup, Select, MenuItem, useMediaQuery } from '@mui/material';
+import { Box, Typography, Grid, Card, CardMedia, CardContent, IconButton, Paper, AppBar, Toolbar, TextField, InputAdornment, Tooltip, Drawer, Button, Chip, ToggleButton, ToggleButtonGroup, Select, MenuItem, useMediaQuery, Dialog, DialogTitle, DialogContent } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -16,6 +16,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import MovieIcon from '@mui/icons-material/Movie';
 import TvIcon from '@mui/icons-material/Tv';
+import InfoIcon from '@mui/icons-material/Info';
 import { useState, useEffect } from 'react';
 import ApiSourcePopup from '../components/Netflix/ApiSourcePopup';
 
@@ -62,6 +63,11 @@ function NetflixPage() {
   const [view, setView] = useState('movies'); // State to track view type
   const [isApiPopupOpen, setIsApiPopupOpen] = useState(false);
   const [apiSource, setApiSource] = useState('tmdb'); // Default API source
+  const [showDetails, setShowDetails] = useState(null); // State for show details
+  const [totalEpisodes, setTotalEpisodes] = useState(0); // State for total episodes
+  const [totalSeasons, setTotalSeasons] = useState(0); // State for total seasons
+  const [seasonDetails, setSeasonDetails] = useState([]); // State for season details
+  const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false); // State for popup visibility
 
   // Use media query to determine if the screen is small
   const isSmallScreen = useMediaQuery('(max-width:600px)');
@@ -328,6 +334,44 @@ function NetflixPage() {
     setWatchedHistory(prev => [...prev, { id: movie.id, title: movie.title, mediaType: movie.mediaType }]);
   };
 
+  // Function to fetch show details based on selected season
+  const fetchShowDetails = async (showId) => {
+    try {
+      const response = await fetch(`${TMDB_BASE_URL}/tv/${showId}?api_key=${TMDB_API_KEY}`);
+      const data = await response.json();
+      setShowDetails(data);
+      setTotalEpisodes(data.number_of_episodes); // Get total episodes from the response
+      setTotalSeasons(data.number_of_seasons); // Get total seasons from the response
+
+      // Fetch season details
+      const seasonPromises = [];
+      for (let i = 1; i <= data.number_of_seasons; i++) {
+        seasonPromises.push(fetch(`${TMDB_BASE_URL}/tv/${showId}/season/${i}?api_key=${TMDB_API_KEY}`));
+      }
+      const seasonResponses = await Promise.all(seasonPromises);
+      const seasonData = await Promise.all(seasonResponses.map(res => res.json()));
+      setSeasonDetails(seasonData); // Store season details
+    } catch (error) {
+      console.error('Error fetching show details:', error);
+    }
+  };
+
+  // Example show ID (replace with actual logic to get the show ID)
+  const exampleShowId = 12345; // Replace with the actual show ID you want to fetch details for
+
+  useEffect(() => {
+    if (exampleShowId) {
+      fetchShowDetails(exampleShowId); // Fetch show details when the component mounts
+    }
+  }, [exampleShowId]);
+
+  // Fetch show details whenever the selected movie changes
+  useEffect(() => {
+    if (selectedMovie) {
+      fetchShowDetails(selectedMovie.id); // Fetch details for the selected movie
+    }
+  }, [selectedMovie]);
+
   if (loading) {
     return (
       <Box sx={{ 
@@ -569,78 +613,98 @@ function NetflixPage() {
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 2 }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <TextField
-                        //label="Season"
-                        type="number"
+                      <Select
                         value={selectedSeason}
-                        onChange={(e) => setSelectedSeason(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedSeason(e.target.value);
+                          setSelectedEpisode('1'); // Reset episode selection when season changes
+                        }}
                         sx={{ 
-                          width: '80px',
+                          width: '125px',
+                          height: '40px',
                           bgcolor: 'rgba(255, 255, 255, 0.2)', 
                           borderRadius: '8px',
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            '& fieldset': {
-                              borderColor: 'transparent',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'transparent',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: 'transparent',
-                            },
-                          },
-                          '& .MuiInputBase-input': {
+                          '& .MuiSelect-select': {
                             color: 'white',
-                            fontSize: '1rem',
                             padding: '10px',
                           },
                           '&:hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.3)',
+                            bgcolor: 'rgba(255, 255, 255, 0.3)', 
                           },
                         }}
-                      />
-                      <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>Season</Typography>
+                      >
+                        {Array.from({ length: totalSeasons }, (_, index) => (
+                          <MenuItem key={index + 1} value={index + 1}>
+                            Season {index + 1}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {/* <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}></Typography> */}
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <TextField
-                        //label="Episode"
-                        type="number"
+                      <Select
                         value={selectedEpisode}
                         onChange={(e) => setSelectedEpisode(e.target.value)}
                         sx={{ 
-                          width: '80px',
+                          width: '125px',
+                          height: '40px',
                           bgcolor: 'rgba(255, 255, 255, 0.2)', 
                           borderRadius: '8px',
-                          '& .MuiOutlinedInput-root': {
-                            borderRadius: '8px',
-                            '& fieldset': {
-                              borderColor: 'transparent',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: 'transparent',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: 'transparent',
-                            },
-                          },
-                          '& .MuiInputBase-input': {
+                          '& .MuiSelect-select': {
                             color: 'white',
-                            fontSize: '1rem',
                             padding: '10px',
                           },
                           '&:hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.3)',
+                            bgcolor: 'rgba(255, 255, 255, 0.3)', 
                           },
                         }}
-                      />
-                      <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>Episode</Typography>
+                      >
+                        {seasonDetails[selectedSeason - 1]?.episodes.map((episode, index) => (
+                          <MenuItem key={index + 1} value={index + 1}>
+                            Episode {index + 1}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {/* <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>Episode</Typography> */}
                     </Box>
                   </Box>
+
+                  {/* Info Button to Open Details Popup */}
+                  <IconButton 
+                    onClick={() => setIsDetailsPopupOpen(true)} 
+                    sx={{ 
+                      bgcolor: 'rgba(255, 255, 255, 0.2)', 
+                      borderRadius: '50%', 
+                      width: '40px', 
+                      height: '40px', 
+                      position: 'absolute', 
+                      top: '10px', 
+                      right: '10px',
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.3)',
+                      },
+                    }}
+                  >
+                    <InfoIcon sx={{ color: 'white' }} />
+                  </IconButton>
                 </Box>
               </>
             )}
           </Box>
+
+          {/* Show Details Popup */}
+          <Dialog open={isDetailsPopupOpen} onClose={() => setIsDetailsPopupOpen(false)} sx={{ backdropFilter: 'blur(10px)' }}>
+            <DialogTitle sx={{ bgcolor: '#181818', color: 'white' }}>Show Details</DialogTitle>
+            <DialogContent sx={{ bgcolor: '#181818', color: 'white' }}>
+              {showDetails && (
+                <>
+                  <Typography variant="body1">Total Episodes: {totalEpisodes}</Typography>
+                  <Typography variant="body1">Total Seasons: {totalSeasons}</Typography>
+                  <Typography variant="body1">Episodes in Season {selectedSeason}: {seasonDetails[selectedSeason - 1]?.episodes.length || 0}</Typography>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Recommendations Section */}
           <Box sx={{ mt: 4 }}>
