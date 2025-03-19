@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import './styles.css'; // Import your CSS file
 import { Container, Grid, Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert, Badge, Paper, Chip, Rating, CircularProgress, Divider, IconButton } from '@mui/material';
 import { Link } from 'react-router-dom';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -8,19 +8,6 @@ import SearchIcon from '@mui/icons-material/Search';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PaymentIcon from '@mui/icons-material/Payment';
 import SecurityIcon from '@mui/icons-material/Security';
-
-const GlobalStyle = createGlobalStyle`
-  body {
-    width: 100%;
-  height: 100%;
-  /* Add your background pattern here */
-  background-color: #e5e5f7;
-  background-image: radial-gradient(#444cf7 10%, transparent 10%),
-                      radial-gradient(#444cf7 10%, transparent 10%);
-  background-size: 100px 100px;
-  background-position: 0 0, 50px 50px;
-  }
-`;
 
 function Home({ cart, setCart, openSnackbar, snackbarMessage, handleCloseSnackbar }) {
   const [products, setProducts] = useState([]);
@@ -78,8 +65,7 @@ function Home({ cart, setCart, openSnackbar, snackbarMessage, handleCloseSnackba
   const cartItemCount = cart.reduce((total, item) => total + item.quantity, 0);
 
   return (
-    <Box>
-      <GlobalStyle />
+    <Box className="container">
       {/* Hero Section - Enhanced with search bar */}
       <Paper
         elevation={0}

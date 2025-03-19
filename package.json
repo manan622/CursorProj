@@ -27,8 +27,7 @@
     "graphql": "^16.10.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "react-router-dom": "^7.3.0",
-    "styled-components": "^6.1.16"
+    "react-router-dom": "^7.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
