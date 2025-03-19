@@ -3,25 +3,25 @@ import {
   Dialog, 
   DialogTitle, 
   DialogContent, 
-  DialogActions, 
-  Button, 
+  //DialogActions, 
+  //Button, 
   List, 
   ListItem, 
   ListItemText, 
   Radio, 
   Typography, 
-  TextField,
+  //TextField,
   IconButton,
-  Box
+  //Box
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
+//import AddIcon from '@mui/icons-material/Add';
 
 const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) => {
   const [selectedApi, setSelectedApi] = useState(currentApi);
-  const [newApiName, setNewApiName] = useState('');
-  const [newApiUrl, setNewApiUrl] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
+  //const [newApiName, setNewApiName] = useState('');
+  //const [newApiUrl, setNewApiUrl] = useState('');
+  //const [showAddForm, setShowAddForm] = useState(false);
 
   useEffect(() => {
     setSelectedApi(currentApi);
@@ -29,14 +29,16 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
 
   const handleApiSelect = (apiId) => {
     setSelectedApi(apiId);
-  };
-
-  const handleSave = () => {
-    onApiChange(selectedApi);
+    onApiChange(apiId);
     onClose();
   };
 
-  const handleAddNewApi = () => {
+  /*const handleSave = () => {
+    onApiChange(selectedApi);
+    onClose();
+  };*/
+
+  /*const handleAddNewApi = () => {
     if (newApiName && newApiUrl) {
       const newApi = {
         id: newApiName.toLowerCase().replace(/\s+/g, '-'),
@@ -49,8 +51,9 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
       setNewApiName('');
       setNewApiUrl('');
       setShowAddForm(false);
+      onApiChange(newApi.id);
     }
-  };
+  };*/
 
   return (
     <Dialog 
@@ -76,14 +79,26 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
         </Typography>
         <List>
           {apiSources.map((api) => (
-            <ListItem button key={api.id} onClick={() => handleApiSelect(api.id)} sx={{ bgcolor: selectedApi === api.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent', borderRadius: '8px', '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' } }}>
-              <ListItemText primary={api.name} secondary={api.url} primaryTypographyProps={{ sx: { color: 'white' } }} secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.7)' } }} />
+            <ListItem 
+              button 
+              key={api.id} 
+              onClick={() => handleApiSelect(api.id)} 
+              sx={{ 
+                bgcolor: selectedApi === api.id ? 'rgba(255, 255, 255, 0.1)' : 'transparent', 
+                borderRadius: '8px', 
+                '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.2)' } 
+              }}
+            >
+              <ListItemText 
+                primary={api.name} 
+                primaryTypographyProps={{ sx: { color: 'white' } }} 
+              />
               <Radio checked={selectedApi === api.id} sx={{ color: 'white' }} />
             </ListItem>
           ))}
         </List>
         
-        {showAddForm ? (
+        {/*{showAddForm ? (
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle1" sx={{ mb: 2 }}>Add New API Source</Typography>
             <TextField
@@ -143,12 +158,12 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
           >
             Add New API Source
           </Button>
-        )}
-      </DialogContent>
-      <DialogActions>
+        )}*/}
+     </DialogContent>
+      {/*<DialogActions>
         <Button onClick={onClose} sx={{ color: 'white' }}>Close</Button>
         <Button onClick={handleSave} variant="contained" sx={{ bgcolor: '#E50914', '&:hover': { bgcolor: '#b2070f' } }}>Save</Button>
-      </DialogActions>
+      </DialogActions>*/}
     </Dialog>
   );
 };

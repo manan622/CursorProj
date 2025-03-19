@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import styled, { createGlobalStyle } from 'styled-components';
 import { Container, Grid, Card, CardContent, CardMedia, Typography, Button, Box, Snackbar, Alert, Badge, Paper, Chip, Rating, CircularProgress, Divider, IconButton } from '@mui/material';
 import { Link } from 'react-router-dom';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
@@ -8,32 +9,18 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PaymentIcon from '@mui/icons-material/Payment';
 import SecurityIcon from '@mui/icons-material/Security';
 
-const featuredProducts = [
-  {
-    id: 1,
-    name: 'Product 1',
-    price: '$99.99',
-    image: 'https://via.placeholder.com/300',
-  },
-  {
-    id: 2,
-    name: 'Product 2',
-    price: '$149.99',
-    image: 'https://via.placeholder.com/300',
-  },
-  {
-    id: 3,
-    name: 'Product 3',
-    price: '$199.99',
-    image: 'https://via.placeholder.com/300',
-  },
-  {
-    id: 4,
-    name: 'Product 4',
-    price: '$79.99',
-    image: 'https://via.placeholder.com/300',
-  },
-];
+const GlobalStyle = createGlobalStyle`
+  body {
+    width: 100%;
+  height: 100%;
+  /* Add your background pattern here */
+  background-color: #e5e5f7;
+  background-image: radial-gradient(#444cf7 10%, transparent 10%),
+                      radial-gradient(#444cf7 10%, transparent 10%);
+  background-size: 100px 100px;
+  background-position: 0 0, 50px 50px;
+  }
+`;
 
 function Home({ cart, setCart, openSnackbar, snackbarMessage, handleCloseSnackbar }) {
   const [products, setProducts] = useState([]);
@@ -92,6 +79,7 @@ function Home({ cart, setCart, openSnackbar, snackbarMessage, handleCloseSnackba
 
   return (
     <Box>
+      <GlobalStyle />
       {/* Hero Section - Enhanced with search bar */}
       <Paper
         elevation={0}
