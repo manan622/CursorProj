@@ -864,6 +864,7 @@ function NetflixPage() {
               color: 'black',
               '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' },
             }}
+            onClick={() => handlePlay(movie)}
           >
             <PlayArrowIcon />
           </IconButton>
