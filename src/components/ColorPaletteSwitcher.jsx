@@ -61,6 +61,19 @@ function ColorPaletteSwitcher({ onPaletteChange, onStyleChange }) {
   const [currentPalette, setCurrentPalette] = useState(colorPalettes[0]);
   const [open, setOpen] = useState(false);
   const [netflixStyle, setNetflixStyle] = useState(false);
+//Handles Netflix Style
+  useEffect(() => {
+    const savedNetflixStyle = localStorage.getItem('netflixStyle');
+    if (savedNetflixStyle !== null) {
+      const isNetflixStyle = JSON.parse(savedNetflixStyle);
+      setNetflixStyle(isNetflixStyle);
+      onStyleChange({ netflixStyle: isNetflixStyle });
+    } else {
+      setNetflixStyle(true);
+      localStorage.setItem('netflixStyle', true);
+      onStyleChange({ netflixStyle: true });
+    }
+  }, [onStyleChange]);
 
   const handlePaletteChange = (palette) => {
     setCurrentPalette(palette);
@@ -90,13 +103,15 @@ function ColorPaletteSwitcher({ onPaletteChange, onStyleChange }) {
   const handleNetflixStyleChange = (event) => {
     const newValue = event.target.checked;
     setNetflixStyle(newValue);
+    //Saves the new value to local storage
+    localStorage.setItem('netflixStyle', newValue);
     onStyleChange({ netflixStyle: newValue });
   };
 
   const handleExpandToggle = () => {
     setExpanded(!expanded);
   };
-
+  
   useEffect(() => {
     let timer;
     if (open) {
