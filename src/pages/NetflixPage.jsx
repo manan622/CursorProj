@@ -19,6 +19,7 @@ import TvIcon from '@mui/icons-material/Tv';
 import InfoIcon from '@mui/icons-material/Info';
 import { useState, useEffect } from 'react';
 import ApiSourcePopup from '../components/Netflix/ApiSourcePopup';
+import EmbeddedPlayer from '../components/Netflix/EmbeddedPlayer';
 
 const TMDB_API_KEY = 'da914409e3ab4f883504dc0dbf9d9917';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -68,6 +69,8 @@ function NetflixPage() {
   const [totalSeasons, setTotalSeasons] = useState(0); // State for total seasons
   const [seasonDetails, setSeasonDetails] = useState([]); // State for season details
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false); // State for popup visibility
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [currentVideoUrl, setCurrentVideoUrl] = useState('');
 
   // Use media query to determine if the screen is small
   const isSmallScreen = useMediaQuery('(max-width:600px)');
@@ -79,11 +82,7 @@ function NetflixPage() {
     { id: 'prime', name: 'Prime Video API', url: 'https://vidlink.pro' },
     { id: 'Hotstar', name: 'Hotstar API', url: 'https://embed.su/embed' },
   ];
-//https://moviesapi.club
-//https://player.autoembed.cc/embed
-//https://vidlink.pro
-//https://vidsrc.cc/v2/embed
-//https://embed.su/embed
+
   const handleContentTypeChange = (event, newContentType) => {
     if (newContentType !== null) {
       setContentType(newContentType);
@@ -321,7 +320,7 @@ function NetflixPage() {
     const selectedApi = apiSources.find(api => api.id === apiSource);
     let url;
     if (movie.mediaType === 'tv') {
-      if(apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
+      if (apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
         url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${selectedEpisode}`;
       } else {
         url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
@@ -329,10 +328,30 @@ function NetflixPage() {
     } else {
       url = `${selectedApi.url}/movie/${movie.id}`;
     }
-    window.open(url, '_blank');
-    // Add to watched history
-    setWatchedHistory(prev => [...prev, { id: movie.id, title: movie.title, mediaType: movie.mediaType }]);
+    setCurrentVideoUrl(url);
+    setIsPlayerOpen(true);
   };
+
+  // Effect to update the video URL when the API source changes
+  useEffect(() => {
+    if (isPlayerOpen) {
+      // Re-fetch the video URL when the API source changes
+      const selectedApi = apiSources.find(api => api.id === apiSource);
+      let url;
+      if (selectedMovie) {
+        if (selectedMovie.mediaType === 'tv') {
+          if (apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
+            url = `${selectedApi.url}/tv/${selectedMovie.id}/${selectedSeason}/${selectedEpisode}`;
+          } else {
+            url = `${selectedApi.url}/tv/${selectedMovie.id}-${selectedSeason}-${selectedEpisode}`;
+          }
+        } else {
+          url = `${selectedApi.url}/movie/${selectedMovie.id}`;
+        }
+        setCurrentVideoUrl(url);
+      }
+    }
+  }, [apiSource, selectedMovie, selectedSeason, selectedEpisode, isPlayerOpen]);
 
   // Function to fetch show details based on selected season
   const fetchShowDetails = async (showId) => {
@@ -371,6 +390,14 @@ function NetflixPage() {
       fetchShowDetails(selectedMovie.id); // Fetch details for the selected movie
     }
   }, [selectedMovie]);
+
+  const handleApiPopupOpen = () => {
+    setIsApiPopupOpen(true);
+  };
+
+  const handleApiPopupClose = () => {
+    setIsApiPopupOpen(false);
+  };
 
   if (loading) {
     return (
@@ -639,7 +666,6 @@ function NetflixPage() {
                           </MenuItem>
                         ))}
                       </Select>
-                      {/* <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}></Typography> */}
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <Select
@@ -665,11 +691,9 @@ function NetflixPage() {
                           </MenuItem>
                         ))}
                       </Select>
-                      {/* <Typography variant="body2" sx={{ color: 'white', mt: 0.5 }}>Episode</Typography> */}
                     </Box>
                   </Box>
 
-                  {/* Info Button to Open Details Popup */}
                   <IconButton 
                     onClick={() => setIsDetailsPopupOpen(true)} 
                     sx={{ 
@@ -692,7 +716,6 @@ function NetflixPage() {
             )}
           </Box>
 
-          {/* Show Details Popup */}
           <Dialog open={isDetailsPopupOpen} onClose={() => setIsDetailsPopupOpen(false)} sx={{ backdropFilter: 'blur(10px)' }}>
             <DialogTitle sx={{ bgcolor: '#181818', color: 'white' }}>Show Details</DialogTitle>
             <DialogContent sx={{ bgcolor: '#181818', color: 'white' }}>
@@ -706,7 +729,6 @@ function NetflixPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Recommendations Section */}
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
               More Like This
@@ -1071,6 +1093,20 @@ function NetflixPage() {
                             }}
                           />
                           {hoveredMovie === `search-${movie.id}-${index}` && <MovieHoverContent movie={movie} />}
+                          <IconButton
+                            onClick={() => handlePlay(movie)}
+                            sx={{
+                              position: 'absolute',
+                              bottom: 10,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              bgcolor: 'rgba(255, 255, 255, 0.8)',
+                              color: 'black',
+                              '&:hover': { bgcolor: 'rgba(255, 255, 255, 1)' },
+                            }}
+                          >
+                            Play
+                          </IconButton>
                         </Box>
                       </Card>
                     </Grid>
@@ -1698,29 +1734,34 @@ function NetflixPage() {
         </ToggleButtonGroup>
       </Box>
 
-      {/* Black Faded Texture at Bottom */}
       <Box
         sx={{
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
-          height: '25px', // Set height to 25px
-          bgcolor: 'rgba(0, 0, 0, 0.5)', // Reduced opacity
-          zIndex: 999, // Ensure it's above other content
-          backdropFilter: 'blur(10px)', // Add blur effect
+          height: '25px',
+          bgcolor: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 999,
+          backdropFilter: 'blur(10px)',
         }}
       />
 
-      {/* API Source Popup */}
       <ApiSourcePopup
         open={isApiPopupOpen}
-        onClose={() => setIsApiPopupOpen(false)}
+        onClose={handleApiPopupClose}
         currentApi={apiSource}
         onApiChange={(newApi) => {
           setApiSource(newApi);
         }}
         apiSources={apiSources}
+      />
+
+      <EmbeddedPlayer
+        open={isPlayerOpen}
+        onClose={() => setIsPlayerOpen(false)}
+        videoUrl={currentVideoUrl}
+        onApiPopupOpen={handleApiPopupOpen}
       />
     </Box>
   );
