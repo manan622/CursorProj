@@ -329,6 +329,7 @@ function NetflixPage() {
       url = `${selectedApi.url}/movie/${movie.id}`;
     }
     setCurrentVideoUrl(url);
+    setSelectedMovie(movie);
     setIsPlayerOpen(true);
   };
 

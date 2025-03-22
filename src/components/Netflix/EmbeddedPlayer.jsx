@@ -1,8 +1,18 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, IconButton, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
 const EmbeddedPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
+  // Add a state to track the URL for the key prop
+  const [videoKey, setVideoKey] = useState('');
+  
+  // Update the videoKey whenever videoUrl changes
+  useEffect(() => {
+    if (videoUrl) {
+      setVideoKey(videoUrl);
+    }
+  }, [videoUrl]);
+  
   return (
     <Dialog 
       sx={{ backdropFilter: 'blur(10px)' }} 
@@ -52,6 +62,7 @@ const EmbeddedPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
               overflow: 'hidden',
             }}>
               <iframe
+                key={videoKey} // Add key prop to force re-render when URL changes
                 src={videoUrl}
                 title="Embedded Video"
                 frameBorder="0"
