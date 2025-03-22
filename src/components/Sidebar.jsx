@@ -124,7 +124,6 @@ function Sidebar({ cart = [] }) {
           {/* Home */}
           <Tooltip title={isOpen ? "" : "Home"} placement="right">
             <ListItem 
-              button 
               component={Link} 
               to="/" 
               sx={{ 
@@ -147,7 +146,6 @@ function Sidebar({ cart = [] }) {
           {/* Products */}
           <Tooltip title={isOpen ? "" : "Products"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/products"
               sx={{ 
@@ -170,7 +168,6 @@ function Sidebar({ cart = [] }) {
           {/* Categories */}
           <Tooltip title={isOpen ? "" : "Categories"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/categories"
               sx={{ 
@@ -193,7 +190,6 @@ function Sidebar({ cart = [] }) {
           {/* Deals */}
           <Tooltip title={isOpen ? "" : "Deals"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/deals"
               sx={{ 
@@ -216,7 +212,6 @@ function Sidebar({ cart = [] }) {
           {/* Wishlist - New Item */}
           <Tooltip title={isOpen ? "" : "Wishlist"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/wishlist"
               sx={{ 
@@ -241,7 +236,6 @@ function Sidebar({ cart = [] }) {
           {/* Search */}
           <Tooltip title={isOpen ? "" : "Search"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/search"
               sx={{ 
@@ -264,7 +258,6 @@ function Sidebar({ cart = [] }) {
           {/* Cart with Badge */}
           <Tooltip title={isOpen ? "" : "Cart"} placement="right">
             <ListItem 
-              button 
               component={Link} 
               to="/cart" 
               sx={{ 
@@ -296,7 +289,6 @@ function Sidebar({ cart = [] }) {
           {/* Profile */}
           <Tooltip title={isOpen ? "" : "Profile"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/profile"
               sx={{ 
@@ -319,7 +311,6 @@ function Sidebar({ cart = [] }) {
           {/* Settings */}
           <Tooltip title={isOpen ? "" : "Settings"} placement="right">
             <ListItem 
-              button 
               component={Link}
               to="/settings"
               sx={{ 

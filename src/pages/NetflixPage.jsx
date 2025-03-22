@@ -207,16 +207,16 @@ function NetflixPage() {
       // Re-fetch the video URL when the API source changes
       const selectedApi = apiSources.find(api => api.id === apiSource);
       let url;
-      if (selectedMovie.mediaType === 'tv') {
-        if (apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
-          url = `${selectedApi.url}/tv/${selectedMovie.id}/${selectedSeason}/${selectedEpisode}`;
+        if (selectedMovie.mediaType === 'tv') {
+          if (apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
+            url = `${selectedApi.url}/tv/${selectedMovie.id}/${selectedSeason}/${selectedEpisode}`;
+          } else {
+            url = `${selectedApi.url}/tv/${selectedMovie.id}-${selectedSeason}-${selectedEpisode}`;
+          }
         } else {
-          url = `${selectedApi.url}/tv/${selectedMovie.id}-${selectedSeason}-${selectedEpisode}`;
+          url = `${selectedApi.url}/movie/${selectedMovie.id}`;
         }
-      } else {
-        url = `${selectedApi.url}/movie/${selectedMovie.id}`;
-      }
-      setCurrentVideoUrl(url);
+        setCurrentVideoUrl(url);
     }
   }, [apiSource, selectedMovie, selectedSeason, selectedEpisode, isPlayerOpen]);
 
@@ -244,11 +244,11 @@ function NetflixPage() {
           setTotalEpisodes(details.totalEpisodes);
           setTotalSeasons(details.totalSeasons);
           setSeasonDetails(details.seasonDetails);
-        } catch (error) {
-          console.error('Error fetching show details:', error);
-        }
-      };
-      
+    } catch (error) {
+      console.error('Error fetching show details:', error);
+    }
+  };
+
       fetchTvShowDetails();
     }
   }, [selectedMovie]);

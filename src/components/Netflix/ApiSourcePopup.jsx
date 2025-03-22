@@ -66,7 +66,6 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
           {apiSources.map((api) => (
             <ListItem 
               key={api.id} 
-              button 
               onClick={() => handleApiSelect(api.id)}
               sx={{ 
                 borderBottom: '1px solid rgba(255,255,255,0.1)',
@@ -75,6 +74,7 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
                   bgcolor: 'rgba(255,255,255,0.1)',
                 },
                 bgcolor: currentApi === api.id ? 'rgba(229, 9, 20, 0.1)' : 'transparent',
+                cursor: 'pointer',
               }}
             >
               <Radio 

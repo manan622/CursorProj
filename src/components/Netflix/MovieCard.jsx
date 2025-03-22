@@ -20,18 +20,21 @@ const MovieCard = ({
   uniqueId
 }) => {
   return (
-    <Grid item xs={12} sm={6} md={4}>
+    <Grid item xs={6} sm={4} md={3} lg={2.4} sx={{ aspectRatio: '2/3', minHeight: { xs: '180px', sm: '240px', md: '300px' } }}>
       <Card
         sx={{
-          flex: '0 0 auto',
-          width: { xs: '120px', sm: '150px', md: '200px' },
+          width: '100%',
+          height: '100%',
           bgcolor: 'transparent',
           cursor: 'pointer',
           transition: 'transform 0.3s ease-in-out',
+          boxShadow: 'none',
           '&:hover': {
             transform: 'scale(1.05)',
             zIndex: 2,
           },
+          display: 'flex',
+          flexDirection: 'column',
         }}
         onMouseEnter={() => setHoveredMovie(uniqueId)}
         onMouseLeave={() => setHoveredMovie(null)}
@@ -40,14 +43,15 @@ const MovieCard = ({
           setIsDetailsOpen(true);
         }}
       >
-        <Box sx={{ position: 'relative' }}>
+        <Box sx={{ position: 'relative', flexGrow: 1, borderRadius: '8px', overflow: 'hidden' }}>
           <CardMedia
             component="img"
-            image={`${TMDB_IMAGE_BASE_URL}/w500${movie.poster_path}`}
-            alt={movie.title}
+            image={movie.poster_path ? `${TMDB_IMAGE_BASE_URL}/w500${movie.poster_path}` : 'https://via.placeholder.com/300x450?text=No+Image'}
+            alt={movie.title || movie.name}
             sx={{
-              borderRadius: '4px',
-              aspectRatio: '2/3',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
             }}
           />
           {hoveredMovie === uniqueId && (
@@ -59,100 +63,105 @@ const MovieCard = ({
                 right: 0,
                 bottom: 0,
                 bgcolor: '#181818',
-                p: 2,
+                p: { xs: 1, sm: 1.5, md: 2 },
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
+                borderRadius: '8px',
               }}
             >
               <Box>
-                <Typography variant="h6" sx={{ color: 'white', mb: 1 }}>
-                  {movie.title}
+                <Typography variant="h6" sx={{ color: 'white', mb: 0.5, fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' }, fontWeight: 'bold' }}>
+                  {movie.title || movie.name}
                 </Typography>
                 <Typography 
                   variant="body2" 
                   sx={{ 
                     color: 'white', 
-                    mb: 2,
+                    mb: 1,
                     display: '-webkit-box',
-                    WebkitLineClamp: 3,
+                    WebkitLineClamp: { xs: 2, sm: 3 },
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
+                    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    lineHeight: '1.2',
                   }}
                 >
                   {movie.overview}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="body2" sx={{ color: '#46d369' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                  <Typography variant="body2" sx={{ color: '#46d369', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
                     {Math.round(movie.vote_average * 10)}% Match
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'white' }}>
+                  <Typography variant="body2" sx={{ color: 'white', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
                     • {formatDuration(movie.runtime || 120)}
                   </Typography>
                   {movie.release_date && (
-                    <Typography variant="body2" sx={{ color: 'white' }}>
+                    <Typography variant="body2" sx={{ color: 'white', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
                       • {new Date(movie.release_date).getFullYear()}
                     </Typography>
                   )}
-                  {movie.original_language && (
-                    <Typography variant="body2" sx={{ color: 'white' }}>
-                      • {movie.original_language.toUpperCase()}
+                  {movie.first_air_date && (
+                    <Typography variant="body2" sx={{ color: 'white', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
+                      • {new Date(movie.first_air_date).getFullYear()}
                     </Typography>
                   )}
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
+              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', mt: 1 }}>
                 <Tooltip title="Play">
                   <IconButton
+                    size="small"
                     sx={{
                       bgcolor: 'white',
                       color: 'black',
+                      padding: { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' },
                     }}
-                    onClick={() => handlePlay(movie)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlay(movie);
+                    }}
                   >
-                    <PlayArrowIcon />
+                    <PlayArrowIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Add to My List">
                   <IconButton
-                    onClick={() => toggleMyList(movie)}
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleMyList(movie);
+                    }}
                     sx={{
                       bgcolor: isInMyList(movie.id) ? '#E50914' : 'rgba(109, 109, 110, 0.7)',
                       color: 'white',
+                      padding: { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { 
                         bgcolor: isInMyList(movie.id) ? '#F40612' : 'rgba(109, 109, 110, 0.4)',
                       },
                     }}
                   >
-                    <AddIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Like">
-                  <IconButton
-                    sx={{
-                      bgcolor: 'rgba(109, 109, 110, 0.7)',
-                      color: 'white',
-                      '&:hover': { bgcolor: 'rgba(109, 109, 110, 0.4)' },
-                    }}
-                  >
-                    <ThumbUpIcon />
+                    <AddIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="More Info">
                   <IconButton
-                    onClick={() => {
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setSelectedMovie(movie);
                       setIsDetailsOpen(true);
                     }}
                     sx={{
                       bgcolor: 'rgba(109, 109, 110, 0.7)',
                       color: 'white',
+                      padding: { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { bgcolor: 'rgba(109, 109, 110, 0.4)' },
                     }}
                   >
-                    <ExpandMoreIcon />
+                    <ExpandMoreIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
                   </IconButton>
                 </Tooltip>
               </Box>
