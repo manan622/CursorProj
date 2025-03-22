@@ -1,17 +1,85 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, IconButton, Button } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
 const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
   const [videoKey, setVideoKey] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const iframeRef = useRef(null);
+  
+  // Memoize iframe attributes to prevent unnecessary re-renders
+  const iframeAttrs = useMemo(() => ({
+    title: "Embedded Video",
+    frameBorder: "0",
+    allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+    allowFullScreen: true,
+    loading: "lazy",
+    referrerPolicy: "no-referrer",
+    // Hardware acceleration attributes for better performance
+    webkitallowfullscreen: true,
+    mozallowfullscreen: true,
+    style: {
+      position: 'relative',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      border: 'none',
+    }
+  }), []);
+
+  // Handle iframe loading state
+  const handleIframeLoaded = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  // Reset loading state when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setIsLoading(true);
+    }
+  }, [open]);
   
   // Update the videoKey whenever videoUrl changes to force iframe reload
   useEffect(() => {
     if (videoUrl) {
       // Use the timestamp to ensure a unique key each time
       setVideoKey(`${videoUrl}-${Date.now()}`);
+      setIsLoading(true);
     }
+  }, [videoUrl]);
+
+  // Clean up resources when component unmounts
+  useEffect(() => {
+    return () => {
+      if (iframeRef.current) {
+        iframeRef.current.src = '';
+      }
+    };
+  }, []);
+
+  // Optimize the video URL for better performance if possible
+  const optimizedVideoUrl = useMemo(() => {
+    if (!videoUrl) return '';
+    
+    // Add parameters for better performance (if supported by the video provider)
+    const url = new URL(videoUrl, window.location.origin);
+    
+    // Only add parameters if it's a known video platform
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      // YouTube optimizations
+      url.searchParams.set('rel', '0'); // No related videos
+      url.searchParams.set('modestbranding', '1'); // Less branding
+      url.searchParams.set('playsinline', '1'); // Better mobile experience
+      url.searchParams.set('enablejsapi', '1'); // Enable JS API
+      url.searchParams.set('origin', window.location.origin); // Security
+    } else if (videoUrl.includes('vimeo.com')) {
+      // Vimeo optimizations
+      url.searchParams.set('dnt', '1'); // Do not track
+      url.searchParams.set('app_id', 'netflix_clone'); // App identification
+    }
+    
+    return url.toString();
   }, [videoUrl]);
   
   return (
@@ -21,9 +89,23 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      // Optimize Dialog component
+      TransitionProps={{
+        timeout: { enter: 300, exit: 200 }
+      }}
+      keepMounted={false}
     >
       <div>
-        <DialogContent sx={{ position: 'relative', padding: 0, height: '750px' }}>
+        <DialogContent 
+          sx={{ 
+            position: 'relative', 
+            padding: 0, 
+            height: '750px',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none'
+          }}
+        >
           <div>
             <IconButton
               onClick={onClose}
@@ -34,6 +116,7 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
                 left: '50%',
                 transform: 'translate(-50%, 0)',
                 color: 'white',
+                zIndex: 2
               }}
             >
               <CloseIcon />
@@ -49,6 +132,8 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
               backdropFilter: 'blur(10px)',
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
               overflow: 'hidden',
+              willChange: 'transform', // Hardware acceleration hint
+              transform: 'translateZ(0)', // Force GPU rendering
             }}>
               <div style={{
                 position: 'relative',
@@ -60,23 +145,43 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
                 backgroundColor: '#000',
                 borderRadius: '2px',
                 overflow: 'hidden',
+                willChange: 'transform', // Hardware acceleration hint
               }}>
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      backgroundColor: '#000',
+                      zIndex: 1
+                    }}
+                  >
+                    <div 
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        border: '4px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '50%',
+                        borderTopColor: '#E50914',
+                        animation: 'spin 1s linear infinite'
+                      }}
+                    />
+                  </div>
+                )}
+                
                 <iframe
                   ref={iframeRef}
-                  key={videoKey} // Key prop forces re-render when videoUrl changes
-                  src={videoUrl}
-                  title="Embedded Video"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{
-                    position: 'relative',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                  }}
+                  key={videoKey}
+                  src={optimizedVideoUrl}
+                  onLoad={handleIframeLoaded}
+                  {...iframeAttrs}
                 />
               </div>
               <div>
@@ -107,4 +212,4 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
   );
 };
 
-export default VideoPlayer; 
+export default React.memo(VideoPlayer); 
