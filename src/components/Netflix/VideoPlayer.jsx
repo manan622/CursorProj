@@ -40,14 +40,40 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
     }
   }, [open]);
   
-  // Update the videoKey whenever videoUrl changes to force iframe reload
+  // Update the videoKey only when videoUrl changes AND the dialog is open
   useEffect(() => {
-    if (videoUrl) {
-      // Use the timestamp to ensure a unique key each time
-      setVideoKey(`${videoUrl}-${Date.now()}`);
+    if (open && videoUrl) {
+      console.log("Video URL changed and dialog is open:", videoUrl);
+      
+      // Extract just the base info to detect if it's a different show/episode
+      let urlInfo = '';
+      
+      try {
+        // Check if we're changing episode number format (absolute vs regular)
+        if (videoUrl.includes('/tv/')) {
+          // For TV shows, extract just the show ID and episode info
+          const tvMatch = videoUrl.match(/\/tv\/(\d+).*$/);
+          if (tvMatch) {
+            urlInfo = tvMatch[0];
+          }
+        } else if (videoUrl.includes('/movie/')) {
+          // For movies, extract just the movie ID
+          const movieMatch = videoUrl.match(/\/movie\/(\d+).*$/);
+          if (movieMatch) {
+            urlInfo = movieMatch[0];
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing URL for key:", error);
+      }
+      
+      // Append a timestamp to force iframe reload, including URL info to detect format changes
+      setVideoKey(`${urlInfo}-${Date.now()}`);
+      
+      // Always reset loading state when URL changes
       setIsLoading(true);
     }
-  }, [videoUrl]);
+  }, [videoUrl, open]);
 
   // Clean up resources when component unmounts
   useEffect(() => {
@@ -58,28 +84,37 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
     };
   }, []);
 
-  // Optimize the video URL for better performance if possible
+  // Parse and optimize the video URL for different formats
   const optimizedVideoUrl = useMemo(() => {
     if (!videoUrl) return '';
     
-    // Add parameters for better performance (if supported by the video provider)
-    const url = new URL(videoUrl, window.location.origin);
-    
-    // Only add parameters if it's a known video platform
-    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-      // YouTube optimizations
-      url.searchParams.set('rel', '0'); // No related videos
-      url.searchParams.set('modestbranding', '1'); // Less branding
-      url.searchParams.set('playsinline', '1'); // Better mobile experience
-      url.searchParams.set('enablejsapi', '1'); // Enable JS API
-      url.searchParams.set('origin', window.location.origin); // Security
-    } else if (videoUrl.includes('vimeo.com')) {
-      // Vimeo optimizations
-      url.searchParams.set('dnt', '1'); // Do not track
-      url.searchParams.set('app_id', 'netflix_clone'); // App identification
+    try {
+      // Check if it's using absolute numbering (indicated by "-abs-" in the URL)
+      if (videoUrl.includes('-abs-')) {
+        console.log("Using absolute episode numbering");
+      }
+      
+      const url = new URL(videoUrl, window.location.origin);
+      
+      // Only add parameters if it's a known video platform
+      if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+        // YouTube optimizations
+        url.searchParams.set('rel', '0'); // No related videos
+        url.searchParams.set('modestbranding', '1'); // Less branding
+        url.searchParams.set('playsinline', '1'); // Better mobile experience
+        url.searchParams.set('enablejsapi', '1'); // Enable JS API
+        url.searchParams.set('origin', window.location.origin); // Security
+      } else if (videoUrl.includes('vimeo.com')) {
+        // Vimeo optimizations
+        url.searchParams.set('dnt', '1'); // Do not track
+        url.searchParams.set('app_id', 'netflix_clone'); // App identification
+      }
+      
+      return url.toString();
+    } catch (error) {
+      console.error("Error parsing video URL:", error);
+      return '';
     }
-    
-    return url.toString();
   }, [videoUrl]);
   
   return (

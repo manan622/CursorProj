@@ -132,22 +132,69 @@ function NetflixPage() {
     return myList.some(movie => movie.id === movieId);
   }, [myList]);
 
-  const handlePlay = useCallback((movie) => {
-    const selectedApi = apiSources.find(api => api.id === apiSource);
+  // Generate video URL based on movie/show and numbering mode
+  const getVideoUrl = useCallback((movie, apiSourceId) => {
+    const selectedApi = apiSources.find(api => api.id === apiSourceId);
     let url;
+    
     if (movie.mediaType === 'tv') {
-      if (apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
-        url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${selectedEpisode}`;
+      // Check if we have a valid absolute episode number to use
+      if (movie.absoluteEpisodeNumber && movie.absoluteEpisodeNumber !== null) {
+        // Using absolute numbering mode - pass only the absolute number for all API sources
+        if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
+          url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${movie.absoluteEpisodeNumber}`;
+        } else {
+          url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${movie.absoluteEpisodeNumber}`;
+        }
       } else {
-        url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${selectedEpisode}`;
+        // Using regular season/episode numbering
+        const season = movie.currentSeason || selectedSeason;
+        const episode = movie.currentEpisode || selectedEpisode;
+        
+        if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
+          url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}`;
+        } else {
+          url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}`;
+        }
       }
     } else {
+      // For movies, just use the movie ID
       url = `${selectedApi.url}/movie/${movie.id}`;
     }
+    
+    return url;
+  }, [selectedSeason, selectedEpisode]);
+
+  const handlePlay = useCallback((movie) => {
+    // Debug: Log whether we're using absolute numbering or not
+    if (movie.mediaType === 'tv') {
+      console.log("Playing TV episode with:", {
+        absoluteNumbering: movie.absoluteEpisodeNumber ? "yes" : "no",
+        absoluteEpisodeNumber: movie.absoluteEpisodeNumber,
+        season: movie.currentSeason,
+        episode: movie.currentEpisode
+      });
+    }
+    
+    const url = getVideoUrl(movie, apiSource);
+    console.log("Generated video URL:", url);
+    
     setCurrentVideoUrl(url);
     setSelectedMovie(movie);
     setIsPlayerOpen(true);
-  }, [apiSource, selectedSeason, selectedEpisode]);
+  }, [apiSource, getVideoUrl]);
+
+  // Effect to update the video URL when the API source changes
+  useEffect(() => {
+    if (isPlayerOpen && selectedMovie) {
+      // Only update the URL if the player is already open
+      const url = getVideoUrl(selectedMovie, apiSource);
+      setCurrentVideoUrl(url);
+      
+      // Don't set isPlayerOpen here, as we don't want to open the player
+      // when only the API source changes
+    }
+  }, [apiSource, selectedMovie, isPlayerOpen, getVideoUrl]);
 
   const handleApiPopupOpen = () => {
     setIsApiPopupOpen(true);
@@ -200,25 +247,6 @@ function NetflixPage() {
       setIsSearching(false);
     }
   }, []);
-
-  // Effect to update the video URL when the API source changes
-  useEffect(() => {
-    if (isPlayerOpen && selectedMovie) {
-      // Re-fetch the video URL when the API source changes
-      const selectedApi = apiSources.find(api => api.id === apiSource);
-      let url;
-        if (selectedMovie.mediaType === 'tv') {
-          if (apiSource === 'hulu' || apiSource === 'prime' || apiSource === 'Hotstar') {
-            url = `${selectedApi.url}/tv/${selectedMovie.id}/${selectedSeason}/${selectedEpisode}`;
-          } else {
-            url = `${selectedApi.url}/tv/${selectedMovie.id}-${selectedSeason}-${selectedEpisode}`;
-          }
-        } else {
-          url = `${selectedApi.url}/movie/${selectedMovie.id}`;
-        }
-        setCurrentVideoUrl(url);
-    }
-  }, [apiSource, selectedMovie, selectedSeason, selectedEpisode, isPlayerOpen]);
 
   // Fetch data when component mounts or API source changes
   useEffect(() => {

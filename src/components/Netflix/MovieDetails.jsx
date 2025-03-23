@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Box, 
   Typography, 
@@ -11,7 +11,10 @@ import {
   MenuItem,
   Dialog,
   DialogTitle,
-  DialogContent
+  DialogContent,
+  Switch,
+  FormControlLabel,
+  Tooltip
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
@@ -22,6 +25,7 @@ import StarIcon from '@mui/icons-material/Star';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import InfoIcon from '@mui/icons-material/Info';
+import EpisodeList from './EpisodeList';
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -48,6 +52,54 @@ const MovieDetails = ({
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false);
+  const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [useAbsoluteNumbering, setUseAbsoluteNumbering] = useState(false);
+
+  // Calculate absolute episode number mapping
+  const absoluteEpisodeMap = useMemo(() => {
+    if (!seasonDetails) return {};
+    
+    const map = {};
+    let absoluteCounter = 1;
+    
+    // Generate a mapping from [season, episode] to absolute number
+    for (let s = 0; s < seasonDetails.length; s++) {
+      const season = seasonDetails[s];
+      if (!season || !season.episodes) continue;
+      
+      map[s + 1] = {};
+      for (let e = 0; e < season.episodes.length; e++) {
+        map[s + 1][e + 1] = absoluteCounter;
+        absoluteCounter++;
+      }
+    }
+    
+    return map;
+  }, [seasonDetails]);
+  
+  // Reverse mapping: from absolute to [season, episode]
+  const reverseEpisodeMap = useMemo(() => {
+    if (!seasonDetails) return {};
+    
+    const map = {};
+    let absoluteCounter = 1;
+    
+    // Generate a mapping from absolute number to [season, episode]
+    for (let s = 0; s < seasonDetails.length; s++) {
+      const season = seasonDetails[s];
+      if (!season || !season.episodes) continue;
+      
+      for (let e = 0; e < season.episodes.length; e++) {
+        map[absoluteCounter] = {
+          season: s + 1,
+          episode: e + 1
+        };
+        absoluteCounter++;
+      }
+    }
+    
+    return map;
+  }, [seasonDetails]);
 
   useEffect(() => {
     const fetchRecommendations = async () => {
@@ -81,6 +133,30 @@ const MovieDetails = ({
   const openInTMDB = () => {
     const mediaType = movie.mediaType || 'movie';
     window.open(`https://www.themoviedb.org/${mediaType}/${movie.id}`, '_blank');
+  };
+
+  const handleAbsoluteEpisodeChange = (absoluteNumber) => {
+    // Only update the season and episode selection without playing
+    const { season, episode } = reverseEpisodeMap[absoluteNumber];
+    setSelectedSeason(season);
+    setSelectedEpisode(episode);
+    
+    // Don't call handlePlay here, as that would open the player
+    console.log(`Selected episode changed to S${season}E${episode} (Absolute #${absoluteNumber})`);
+  };
+  
+  const handleEpisodeSelect = (seasonNumber, episodeNumber) => {
+    // Only update the season and episode selection without playing
+    setSelectedSeason(seasonNumber);
+    setSelectedEpisode(episodeNumber);
+    
+    // Don't call handlePlay here, as that would open the player
+    const absoluteNumber = useAbsoluteNumbering && absoluteEpisodeMap[seasonNumber]?.[episodeNumber];
+    if (absoluteNumber) {
+      console.log(`Selected episode changed to S${seasonNumber}E${episodeNumber} (Absolute #${absoluteNumber})`);
+    } else {
+      console.log(`Selected episode changed to S${seasonNumber}E${episodeNumber}`);
+    }
   };
 
   return (
@@ -134,7 +210,32 @@ const MovieDetails = ({
                 <Button
                   variant="contained"
                   startIcon={<PlayArrowIcon />}
-                  onClick={() => handlePlay(movie)}
+                  onClick={() => {
+                    if (movie.mediaType === 'tv') {
+                      if (useAbsoluteNumbering && absoluteEpisodeMap[selectedSeason]?.[selectedEpisode]) {
+                        // Using absolute numbering mode
+                        handlePlay({
+                          ...movie,
+                          absoluteEpisodeNumber: absoluteEpisodeMap[selectedSeason][selectedEpisode],
+                          // Keep track of these for when we switch back
+                          currentSeason: selectedSeason,
+                          currentEpisode: selectedEpisode
+                        });
+                      } else {
+                        // Using regular season/episode numbering
+                        handlePlay({
+                          ...movie,
+                          currentSeason: selectedSeason,
+                          currentEpisode: selectedEpisode,
+                          // Explicitly setting absoluteEpisodeNumber to null to ensure it's not used
+                          absoluteEpisodeNumber: null
+                        });
+                      }
+                    } else {
+                      // For movies, just pass the movie object
+                      handlePlay(movie);
+                    }
+                  }}
                   sx={{
                     bgcolor: 'white',
                     color: 'black',
@@ -245,60 +346,186 @@ const MovieDetails = ({
                 <Typography variant="h6" sx={{ color: 'white', mb: 1, fontWeight: 'bold', fontSize: '1.2rem' }}>
                   Season and Episode:
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 2, width: '100%' }}>
+                  <Tooltip 
+                    title="When enabled, episodes will be numbered absolutely across all seasons. This affects how episodes are displayed and will be used for playback when you click Play."
+                  >
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={useAbsoluteNumbering}
+                          onChange={(e) => {
+                            const newAbsoluteNumberingState = e.target.checked;
+                            setUseAbsoluteNumbering(newAbsoluteNumberingState);
+                            
+                            // Update the current episode/season selection if needed
+                            if (movie.mediaType === 'tv') {
+                              // We don't want to call handlePlay here, as that would open the player
+                              // Just update any internal state needed for when play is clicked later
+                              if (newAbsoluteNumberingState) {
+                                console.log("Switched to absolute numbering mode");
+                              } else {
+                                console.log("Switched to season-episode numbering mode");
+                              }
+                            }
+                          }}
+                          size="small"
+                          sx={{
+                            '& .MuiSwitch-switchBase.Mui-checked': {
+                              color: '#E50914',
+                            },
+                            '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                              backgroundColor: '#E50914',
+                            },
+                          }}
+                        />
+                      }
+                      label={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body2" sx={{ color: 'white', fontSize: '0.8rem' }}>
+                            Absolute Numbering
+                          </Typography>
+                          <InfoIcon sx={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }} />
+                        </Box>
+                      }
+                    />
+                  </Tooltip>
+                  <Chip 
+                    label={useAbsoluteNumbering ? "Using Absolute Episode Numbering" : "Using Season-Episode Numbering"} 
+                    size="small"
+                    color={useAbsoluteNumbering ? "error" : "default"}
+                    sx={{ ml: 2, fontSize: '0.7rem' }}
+                  />
+                </Box>
+                
+                {useAbsoluteNumbering ? (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 1, fontSize: '0.8rem' }}>
+                      Showing episodes 1-{Object.keys(reverseEpisodeMap).length} across all seasons
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(229,9,20,0.8)', mb: 1, fontSize: '0.75rem', fontStyle: 'italic' }}>
+                      Videos will use absolute episode numbers when you click Play
+                    </Typography>
                     <Select
-                      value={selectedSeason}
-                      onChange={(e) => {
-                        setSelectedSeason(e.target.value);
-                        setSelectedEpisode('1'); // Reset episode selection when season changes
-                      }}
+                      value={absoluteEpisodeMap[selectedSeason]?.[selectedEpisode] || 1}
+                      onChange={(e) => handleAbsoluteEpisodeChange(e.target.value)}
                       sx={{ 
-                        width: '125px',
+                        width: '280px',
                         height: '40px',
                         bgcolor: 'rgba(255, 255, 255, 0.2)', 
                         borderRadius: '8px',
                         '& .MuiSelect-select': {
                           color: 'white',
                           padding: '10px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                         },
                         '&:hover': {
                           bgcolor: 'rgba(255, 255, 255, 0.3)', 
                         },
                       }}
                     >
-                      {Array.from({ length: totalSeasons }, (_, index) => (
-                        <MenuItem key={index + 1} value={index + 1}>
-                          Season {index + 1}
-                        </MenuItem>
-                      ))}
+                      {Object.keys(reverseEpisodeMap).map((absoluteNum) => {
+                        const num = parseInt(absoluteNum);
+                        const { season, episode } = reverseEpisodeMap[num];
+                        const episodeName = seasonDetails[season-1]?.episodes[episode-1]?.name || `Episode ${episode}`;
+                        return (
+                          <MenuItem 
+                            key={num} 
+                            value={num}
+                            sx={{
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '350px'
+                            }}
+                          >
+                            {num}. S{season}E{episode}: {episodeName}
+                          </MenuItem>
+                        );
+                      })}
                     </Select>
                   </Box>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <Select
-                      value={selectedEpisode}
-                      onChange={(e) => setSelectedEpisode(e.target.value)}
-                      sx={{ 
-                        width: '125px',
-                        height: '40px',
-                        bgcolor: 'rgba(255, 255, 255, 0.2)', 
-                        borderRadius: '8px',
-                        '& .MuiSelect-select': {
-                          color: 'white',
-                          padding: '10px',
-                        },
-                        '&:hover': {
-                          bgcolor: 'rgba(255, 255, 255, 0.3)', 
-                        },
-                      }}
-                    >
-                      {seasonDetails && seasonDetails[selectedSeason - 1]?.episodes.map((episode, index) => (
-                        <MenuItem key={index + 1} value={index + 1}>
-                          Episode {index + 1}
-                        </MenuItem>
-                      ))}
-                    </Select>
+                ) : (
+                  <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1,
+                        backgroundColor: useAbsoluteNumbering ? 'rgba(229, 9, 20, 0.1)' : 'transparent',
+                        padding: useAbsoluteNumbering ? 1 : 0,
+                        borderRadius: 1
+                      }}>
+                        <Select
+                          value={selectedSeason}
+                          onChange={(e) => setSelectedSeason(e.target.value)}
+                          sx={{
+                            color: 'white',
+                            '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
+                            '.MuiSvgIcon-root': { color: 'white' },
+                            mr: 1,
+                            width: '120px',
+                          }}
+                        >
+                          {Array.from({ length: totalSeasons }, (_, i) => (
+                            <MenuItem key={i} value={String(i + 1)}>
+                              Season {i + 1}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        <Select
+                          value={selectedEpisode}
+                          onChange={(e) => setSelectedEpisode(e.target.value)}
+                          sx={{
+                            color: 'white',
+                            '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,0.3)' },
+                            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' },
+                            '.MuiSvgIcon-root': { color: 'white' },
+                            width: '150px',
+                          }}
+                        >
+                          {seasonDetails[selectedSeason - 1]?.episodes && Array.from({ length: seasonDetails[selectedSeason - 1].episodes.length }, (_, i) => (
+                            <MenuItem key={i} value={String(i + 1)}>
+                              Episode {i + 1} 
+                              {useAbsoluteNumbering && absoluteEpisodeMap[selectedSeason]?.[i + 1] && 
+                                ` (Abs #${absoluteEpisodeMap[selectedSeason][i + 1]})`
+                              }
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {useAbsoluteNumbering && (
+                          <Chip 
+                            label="Using Absolute Numbering" 
+                            size="small"
+                            color="error"
+                            sx={{ ml: 1 }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
                   </Box>
+                )}
+
+                <Box sx={{ display: 'flex', gap: 2, mt: 2 }}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => setShowEpisodeList(!showEpisodeList)}
+                    sx={{
+                      color: 'white',
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      '&:hover': {
+                        borderColor: 'white',
+                        bgcolor: 'rgba(255,255,255,0.1)',
+                      },
+                    }}
+                  >
+                    {showEpisodeList ? 'Hide Episodes' : 'Browse Episodes'}
+                  </Button>
                 </Box>
 
                 <IconButton 
@@ -319,6 +546,22 @@ const MovieDetails = ({
                   <InfoIcon sx={{ color: 'white' }} />
                 </IconButton>
               </Box>
+
+              {/* Episode List */}
+              {showEpisodeList && (
+                <Box sx={{ mt: 3 }}>
+                  <EpisodeList 
+                    showId={movie.id}
+                    onEpisodeSelect={handleEpisodeSelect}
+                    handlePlay={handlePlay}
+                    formatDuration={formatDuration}
+                    movie={movie}
+                    useAbsoluteNumbering={useAbsoluteNumbering}
+                    absoluteEpisodeMap={absoluteEpisodeMap}
+                    reverseEpisodeMap={reverseEpisodeMap}
+                  />
+                </Box>
+              )}
             </Box>
           )}
 
@@ -421,16 +664,47 @@ const MovieDetails = ({
         open={isDetailsPopupOpen} 
         onClose={() => setIsDetailsPopupOpen(false)} 
         sx={{ backdropFilter: 'blur(10px)' }}
+        maxWidth="sm"
+        fullWidth
       >
-        <DialogTitle sx={{ bgcolor: '#181818', color: 'white' }}>Show Details</DialogTitle>
-        <DialogContent sx={{ bgcolor: '#181818', color: 'white' }}>
+        <DialogTitle 
+          sx={{ 
+            bgcolor: '#181818', 
+            color: 'white',
+            borderBottom: '1px solid rgba(255,255,255,0.1)'
+          }}
+        >
+          Show Details
+        </DialogTitle>
+        <DialogContent sx={{ bgcolor: '#181818', color: 'white', pt: 2 }}>
           {showDetails && (
             <>
-              <Typography variant="body1">Total Episodes: {showDetails.number_of_episodes}</Typography>
-              <Typography variant="body1">Total Seasons: {showDetails.number_of_seasons}</Typography>
-              <Typography variant="body1">
+              <Typography variant="body1" sx={{ mb: 1 }}>Total Episodes: {showDetails.number_of_episodes}</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>Total Seasons: {showDetails.number_of_seasons}</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
                 Episodes in Season {selectedSeason}: {seasonDetails[selectedSeason - 1]?.episodes.length || 0}
               </Typography>
+              
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  Currently Selected:
+                </Typography>
+                <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                  Season {selectedSeason}
+                </Typography>
+                <Typography variant="body1" sx={{ color: '#E50914', fontWeight: 'bold' }}>
+                  Episode {selectedEpisode}: {
+                    seasonDetails && 
+                    seasonDetails[selectedSeason - 1]?.episodes[selectedEpisode - 1]?.name || 
+                    `Episode ${selectedEpisode}`
+                  }
+                </Typography>
+                {useAbsoluteNumbering && (
+                  <Typography variant="body1" sx={{ mt: 1, color: 'rgba(255,255,255,0.7)' }}>
+                    Absolute Episode Number: {absoluteEpisodeMap[selectedSeason]?.[selectedEpisode] || '?'}
+                  </Typography>
+                )}
+              </Box>
             </>
           )}
         </DialogContent>

@@ -151,4 +151,74 @@ export const fetchRecommendations = async (id, mediaType) => {
     console.error('Error fetching recommendations:', error);
     return [];
   }
+};
+
+/**
+ * Fetches episode details for multiple seasons of a TV show
+ * @param {number} showId - The TMDB ID of the TV show
+ * @param {number[]} seasonNumbers - Array of season numbers to fetch (or undefined to fetch all)
+ * @returns {Object} Object containing episode data keyed by season number
+ */
+export const fetchEpisodeNames = async (showId, seasonNumbers) => {
+  try {
+    // First fetch the show details to get the number of seasons if not provided
+    if (!seasonNumbers || seasonNumbers.length === 0) {
+      const showResponse = await fetch(
+        `${TMDB_BASE_URL}/tv/${showId}?api_key=${TMDB_API_KEY}&language=en-US`
+      );
+      
+      if (!showResponse.ok) {
+        throw new Error(`Failed to fetch show details: ${showResponse.status}`);
+      }
+      
+      const showData = await showResponse.json();
+      seasonNumbers = Array.from(
+        { length: showData.number_of_seasons },
+        (_, i) => i + 1
+      );
+    }
+    
+    // Create an object to store episodes by season
+    const episodesBySeason = {};
+    
+    // Fetch each season in parallel
+    await Promise.all(
+      seasonNumbers.map(async (seasonNum) => {
+        const seasonResponse = await fetch(
+          `${TMDB_BASE_URL}/tv/${showId}/season/${seasonNum}?api_key=${TMDB_API_KEY}&language=en-US`
+        );
+        
+        if (!seasonResponse.ok) {
+          console.warn(`Failed to fetch season ${seasonNum}: ${seasonResponse.status}`);
+          episodesBySeason[seasonNum] = { error: `Failed to fetch season ${seasonNum}` };
+          return;
+        }
+        
+        const seasonData = await seasonResponse.json();
+        
+        // Format the episode data to just what we need
+        episodesBySeason[seasonNum] = {
+          seasonName: seasonData.name,
+          seasonNumber: seasonNum,
+          episodes: seasonData.episodes.map(episode => ({
+            id: episode.id,
+            episodeNumber: episode.episode_number,
+            name: episode.name,
+            overview: episode.overview,
+            stillPath: episode.still_path,
+            airDate: episode.air_date,
+            runtime: episode.runtime || 0
+          }))
+        };
+      })
+    );
+    
+    return {
+      showId,
+      seasons: episodesBySeason
+    };
+  } catch (error) {
+    console.error('Error fetching episode names:', error);
+    throw error;
+  }
 }; 
