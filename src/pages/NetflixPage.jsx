@@ -63,6 +63,7 @@ const apiSources = [
   { id: 'hulu', name: 'Hulu API', url: 'https://vidsrc.cc/v2/embed' },
   { id: 'prime', name: 'Prime Video API', url: 'https://vidlink.pro' },
   { id: 'Hotstar', name: 'Hotstar API', url: 'https://embed.su/embed' },
+  { id: 'multiembed', name: 'MultiEmbed API', url: 'https://multiembed.mov' },
 ];
 
 function NetflixPage() {
@@ -143,6 +144,8 @@ function NetflixPage() {
         // Using absolute numbering mode - pass only the absolute number for all API sources
         if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
           url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${movie.absoluteEpisodeNumber}`;
+        } else if (apiSourceId === 'multiembed') {
+          url = `${selectedApi.url}?video_id=${movie.id}&tmdb=1&s=${selectedSeason}&e=${movie.absoluteEpisodeNumber}`;
         } else {
           url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${movie.absoluteEpisodeNumber}`;
         }
@@ -153,10 +156,15 @@ function NetflixPage() {
         
         if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
           url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}`;
+        } else if (apiSourceId === 'multiembed') {
+          url = `${selectedApi.url}?video_id=${movie.id}&tmdb=1&s=${selectedSeason}&e=${selectedEpisode}`;
         } else {
           url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}`;
         }
       }
+    } 
+    else if (apiSourceId === 'multiembed') {
+      url = `${selectedApi.url}?video_id=${movie.id}&tmdb=1`;
     } else {
       // For movies, just use the movie ID
       url = `${selectedApi.url}/movie/${movie.id}`;

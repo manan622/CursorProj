@@ -39,7 +39,7 @@ const MovieCard = ({
       <Card
         sx={{
           width: '100%',
-          height: '100%',
+          height: '96%',
           bgcolor: 'transparent',
           cursor: 'pointer',
           transition: 'transform 0.3s ease-in-out',
