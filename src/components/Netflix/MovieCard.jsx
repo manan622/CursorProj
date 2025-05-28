@@ -4,6 +4,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useNavigate } from 'react-router-dom';
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -17,21 +18,68 @@ const MovieCard = ({
   formatDuration,
   setSelectedMovie,
   setIsDetailsOpen,
-  uniqueId
+  uniqueId,
+  isFullscreen
 }) => {
+  const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+
   // Function to get the best image format based on browser support
   const getOptimizedImageUrl = (path) => {
     if (!path) return 'https://via.placeholder.com/300x450?text=No+Image';
-    
-    // TMDB doesn't provide WebP/AVIF directly, we'd need a proxy service for conversion
-    // For now, we'll use their optimized w500 size which is a good balance
     return `${TMDB_IMAGE_BASE_URL}/w500${path}`;
   };
 
   const handleImageLoad = () => {
     setImageLoaded(true);
+  };
+
+  const handleClick = () => {
+    // Format the movie data before navigation
+    const formattedMovie = {
+      ...movie,
+      id: movie.id,
+      title: movie.title || movie.name,
+      overview: movie.overview,
+      poster_path: movie.poster_path,
+      backdrop_path: movie.backdrop_path,
+      releaseDate: movie.release_date || movie.first_air_date,
+      rating: Math.round((movie.vote_average || 0) * 10) / 10,
+      duration: formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120),
+      genres: movie.genre_ids ? movie.genre_ids.map(id => ({ id, name: getGenreName(id) })) : [],
+      mediaType: movie.mediaType || (movie.first_air_date ? 'tv' : 'movie'),
+      totalSeasons: movie.number_of_seasons || 1,
+      totalEpisodes: movie.number_of_episodes || 1
+    };
+
+    // Navigate to the movie details page with the formatted data
+    navigate(`/movie/${movie.id}`, { state: { movie: formattedMovie } });
+  };
+
+  // Helper function to get genre name from ID
+  const getGenreName = (genreId) => {
+    const genres = {
+      28: 'Action',
+      12: 'Adventure',
+      16: 'Animation',
+      35: 'Comedy',
+      80: 'Crime',
+      99: 'Documentary',
+      18: 'Drama',
+      10751: 'Family',
+      14: 'Fantasy',
+      36: 'History',
+      27: 'Horror',
+      10402: 'Music',
+      9648: 'Mystery',
+      10749: 'Romance',
+      878: 'Science Fiction',
+      10770: 'TV Movie',
+      53: 'Thriller',
+      10752: 'War',
+      37: 'Western'
+    };
+    return genres[genreId] || 'Unknown';
   };
 
   return (
@@ -42,23 +90,41 @@ const MovieCard = ({
           height: '96%',
           bgcolor: 'transparent',
           cursor: 'pointer',
-          transition: 'transform 0.3s ease-in-out',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           boxShadow: 'none',
           '&:hover': {
             transform: 'scale(1.05)',
             zIndex: 2,
+            '& .MuiCardMedia-root': {
+              transform: 'scale(1.1)',
+            }
           },
           display: 'flex',
           flexDirection: 'column',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          position: 'relative',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '12px',
+            opacity: 0,
+            transition: 'opacity 0.3s ease-in-out',
+          },
+          '&:hover::after': {
+            opacity: 1,
+          }
         }}
         onMouseEnter={() => setHoveredMovie(uniqueId)}
         onMouseLeave={() => setHoveredMovie(null)}
-        onClick={() => {
-          setSelectedMovie(movie);
-          setIsDetailsOpen(true);
-        }}
+        onClick={handleClick}
       >
-        <Box sx={{ position: 'relative', flexGrow: 1, borderRadius: '8px', overflow: 'hidden' }}>
+        <Box sx={{ position: 'relative', flexGrow: 1, borderRadius: '12px', overflow: 'hidden' }}>
           {!imageLoaded && (
             <Skeleton 
               variant="rectangular" 
@@ -69,7 +135,8 @@ const MovieCard = ({
                 bgcolor: 'rgba(255, 255, 255, 0.1)',
                 position: 'absolute',
                 top: 0,
-                left: 0
+                left: 0,
+                borderRadius: '12px'
               }} 
             />
           )}
@@ -83,7 +150,8 @@ const MovieCard = ({
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              visibility: imageLoaded ? 'visible' : 'hidden'
+              visibility: imageLoaded ? 'visible' : 'hidden',
+              transition: 'transform 0.3s ease-in-out',
             }}
           />
           {hoveredMovie === uniqueId && (
@@ -94,22 +162,44 @@ const MovieCard = ({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                bgcolor: '#181818',
+                bgcolor: 'rgba(24, 24, 24, 0.85)',
+                backdropFilter: 'blur(5px)',
                 p: { xs: 1, sm: 1.5, md: 2 },
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                borderRadius: '8px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                zIndex: 2,
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.4))',
+                  borderRadius: '12px',
+                  zIndex: -1
+                }
               }}
             >
               <Box>
-                <Typography variant="h6" sx={{ color: 'white', mb: 0.5, fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' }, fontWeight: 'bold' }}>
+                <Typography variant="h6" sx={{ 
+                  color: 'white', 
+                  mb: 0.5, 
+                  fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' }, 
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+                }}>
                   {movie.title || movie.name}
                 </Typography>
                 <Typography 
                   variant="body2" 
                   sx={{ 
-                    color: 'white', 
+                    color: 'rgba(255, 255, 255, 0.9)', 
                     mb: 1,
                     display: '-webkit-box',
                     WebkitLineClamp: { xs: 2, sm: 3 },
@@ -117,49 +207,89 @@ const MovieCard = ({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
-                    lineHeight: '1.2',
+                    lineHeight: '1.4',
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}
                 >
                   {movie.overview}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                  <Typography variant="body2" sx={{ color: '#46d369', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 0.5, 
+                  flexWrap: 'wrap',
+                  mb: 1
+                }}>
+                  <Typography variant="body2" sx={{ 
+                    color: '#46d369', 
+                    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontWeight: 'bold',
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                  }}>
                     {Math.round((movie.vote_average || 0) * 10)}% Match
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'white', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
-                    • {formatDuration(movie.runtime || 120)}
+                  <Typography variant="body2" sx={{ 
+                    color: 'rgba(255, 255, 255, 0.9)', 
+                    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                  }}>
+                    • {formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120)}
                   </Typography>
                   {movie.release_date && (
-                    <Typography variant="body2" sx={{ color: 'white', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
+                    <Typography variant="body2" sx={{ 
+                      color: 'rgba(255, 255, 255, 0.9)', 
+                      fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                    }}>
                       • {new Date(movie.release_date).getFullYear()}
                     </Typography>
                   )}
                   {movie.first_air_date && (
-                    <Typography variant="body2" sx={{ color: 'white', fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' } }}>
+                    <Typography variant="body2" sx={{ 
+                      color: 'rgba(255, 255, 255, 0.9)', 
+                      fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+                    }}>
                       • {new Date(movie.first_air_date).getFullYear()}
                     </Typography>
                   )}
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', mt: 1 }}>
+
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 1, 
+                justifyContent: 'center',
+                mt: 'auto',
+                position: 'relative',
+                zIndex: 3
+              }}>
                 <Tooltip title="Play">
                   <IconButton
                     size="small"
-                    sx={{
-                      bgcolor: 'white',
-                      color: 'black',
-                      padding: { xs: '4px', sm: '6px', md: '8px' },
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' },
-                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePlay(movie);
+                    }}
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.15)',
+                      color: 'white',
+                      padding: { xs: '4px', sm: '6px', md: '8px' },
+                      '&:hover': { 
+                        bgcolor: 'rgba(255, 255, 255, 0.25)',
+                        transform: 'scale(1.1)'
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer'
                     }}
                   >
                     <PlayArrowIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Add to My List">
+
+                <Tooltip title={isInMyList(movie) ? "Remove from My List" : "Add to My List"}>
                   <IconButton
                     size="small"
                     onClick={(e) => {
@@ -167,17 +297,23 @@ const MovieCard = ({
                       toggleMyList(movie);
                     }}
                     sx={{
-                      bgcolor: isInMyList(movie.id) ? '#E50914' : 'rgba(109, 109, 110, 0.7)',
-                      color: 'white',
+                      bgcolor: 'rgba(255, 255, 255, 0.15)',
+                      color: isInMyList(movie) ? '#E50914' : 'white',
                       padding: { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { 
-                        bgcolor: isInMyList(movie.id) ? '#F40612' : 'rgba(109, 109, 110, 0.4)',
+                        bgcolor: 'rgba(255, 255, 255, 0.25)',
+                        transform: 'scale(1.1)'
                       },
+                      transition: 'all 0.2s ease-in-out',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer'
                     }}
                   >
                     <AddIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
                   </IconButton>
                 </Tooltip>
+
                 <Tooltip title="More Info">
                   <IconButton
                     size="small"
@@ -187,10 +323,17 @@ const MovieCard = ({
                       setIsDetailsOpen(true);
                     }}
                     sx={{
-                      bgcolor: 'rgba(109, 109, 110, 0.7)',
+                      bgcolor: 'rgba(255, 255, 255, 0.15)',
                       color: 'white',
                       padding: { xs: '4px', sm: '6px', md: '8px' },
-                      '&:hover': { bgcolor: 'rgba(109, 109, 110, 0.4)' },
+                      '&:hover': { 
+                        bgcolor: 'rgba(255, 255, 255, 0.25)',
+                        transform: 'scale(1.1)'
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      cursor: 'pointer'
                     }}
                   >
                     <ExpandMoreIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />

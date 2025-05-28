@@ -38,6 +38,7 @@ import {
   tvTypeFilter,
   allTypeFilter
 } from '../utils/netflixUtils';
+import userDataManager from '../utils/userDataManager';
 
 const TMDB_API_KEY = 'da914409e3ab4f883504dc0dbf9d9917';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -57,14 +58,60 @@ const tvShowCategories = [
   { title: 'Currently On Air', endpoint: '/tv/on_the_air' },
 ];
 
-const apiSources = [
+export const apiSources = [
   { id: 'tmdb', name: 'TMDB (Default)', url: 'https://moviesapi.club' },
   { id: 'netflix', name: 'Netflix API', url: 'https://player.autoembed.cc/embed' },
   { id: 'hulu', name: 'Hulu API', url: 'https://vidsrc.cc/v2/embed' },
   { id: 'prime', name: 'Prime Video API', url: 'https://vidlink.pro' },
   { id: 'Hotstar', name: 'Hotstar API', url: 'https://embed.su/embed' },
   { id: 'multiembed', name: 'MultiEmbed API', url: 'https://multiembed.mov' },
+  { id: '2embed', name: '2Embed API', url: 'https://2embed.cc/embed' },
 ];
+
+export const getVideoUrl = (movie, apiSourceId) => {
+  const selectedApi = apiSources.find(api => api.id === apiSourceId);
+  let url;
+  
+  if (movie.mediaType === 'tv') {
+    // Check if we have a valid absolute episode number to use
+    if (movie.absoluteEpisodeNumber && movie.absoluteEpisodeNumber !== null) {
+      // Using absolute numbering mode - pass only the absolute number for all API sources
+      if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
+        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}`;
+      } else if (apiSourceId === 'multiembed') {
+        url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}`;
+      } else if (apiSourceId === '2embed') {
+        url = `${selectedApi.url}tv/${movie.id}&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}`;
+      } else {
+        url = `${selectedApi.url}/tv/${movie.id}-${movie.currentSeason}-${movie.absoluteEpisodeNumber}`;
+      }
+    } else {
+      // Using regular season/episode numbering
+      const season = movie.currentSeason;
+      const episode = movie.currentEpisode;
+      
+      if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
+        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}`;
+      } else if (apiSourceId === 'multiembed') {
+        url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${season}&e=${episode}`;
+      } else if (apiSourceId === '2embed') {
+        url = `${selectedApi.url}tv/${movie.id}&s=${season}&e=${episode}`;
+      } else {
+        url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}`;
+      }
+    }
+  } 
+  else if (apiSourceId === 'multiembed') {
+    url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1`;
+  } else if (apiSourceId === '2embed') {
+    url = `${selectedApi.url}/${movie.id}`;
+  } else {
+    // For movies, just use the movie ID
+    url = `${selectedApi.url}/movie/${movie.id}`;
+  }
+  
+  return url;
+};
 
 function NetflixPage() {
   // State for content display
@@ -118,79 +165,26 @@ function NetflixPage() {
     setSearchResults([]);
   };
 
-  const toggleMyList = useCallback((movie) => {
-    setMyList(prevList => {
-      const isInList = prevList.some(m => m.id === movie.id);
-      if (isInList) {
-        return prevList.filter(m => m.id !== movie.id);
-      } else {
-        return [...prevList, movie];
-      }
-    });
-  }, []);
+  const toggleMyList = (movie) => {
+    const isInList = myList.some(item => item.id === movie.id);
+    if (isInList) {
+      setMyList(myList.filter(item => item.id !== movie.id));
+      userDataManager.removeFromMyList(movie.id);
+    } else {
+      setMyList([...myList, movie]);
+      userDataManager.addToMyList(movie);
+    }
+  };
 
   const isInMyList = useCallback((movieId) => {
     return myList.some(movie => movie.id === movieId);
   }, [myList]);
 
-  // Generate video URL based on movie/show and numbering mode
-  const getVideoUrl = useCallback((movie, apiSourceId) => {
-    const selectedApi = apiSources.find(api => api.id === apiSourceId);
-    let url;
-    
-    if (movie.mediaType === 'tv') {
-      // Check if we have a valid absolute episode number to use
-      if (movie.absoluteEpisodeNumber && movie.absoluteEpisodeNumber !== null) {
-        // Using absolute numbering mode - pass only the absolute number for all API sources
-        if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
-          url = `${selectedApi.url}/tv/${movie.id}/${selectedSeason}/${movie.absoluteEpisodeNumber}`;
-        } else if (apiSourceId === 'multiembed') {
-          url = `${selectedApi.url}?video_id=${movie.id}&tmdb=1&s=${selectedSeason}&e=${movie.absoluteEpisodeNumber}`;
-        } else {
-          url = `${selectedApi.url}/tv/${movie.id}-${selectedSeason}-${movie.absoluteEpisodeNumber}`;
-        }
-      } else {
-        // Using regular season/episode numbering
-        const season = movie.currentSeason || selectedSeason;
-        const episode = movie.currentEpisode || selectedEpisode;
-        
-        if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
-          url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}`;
-        } else if (apiSourceId === 'multiembed') {
-          url = `${selectedApi.url}?video_id=${movie.id}&tmdb=1&s=${selectedSeason}&e=${selectedEpisode}`;
-        } else {
-          url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}`;
-        }
-      }
-    } 
-    else if (apiSourceId === 'multiembed') {
-      url = `${selectedApi.url}?video_id=${movie.id}&tmdb=1`;
-    } else {
-      // For movies, just use the movie ID
-      url = `${selectedApi.url}/movie/${movie.id}`;
-    }
-    
-    return url;
-  }, [selectedSeason, selectedEpisode]);
-
-  const handlePlay = useCallback((movie) => {
-    // Debug: Log whether we're using absolute numbering or not
-    if (movie.mediaType === 'tv') {
-      console.log("Playing TV episode with:", {
-        absoluteNumbering: movie.absoluteEpisodeNumber ? "yes" : "no",
-        absoluteEpisodeNumber: movie.absoluteEpisodeNumber,
-        season: movie.currentSeason,
-        episode: movie.currentEpisode
-      });
-    }
-    
-    const url = getVideoUrl(movie, apiSource);
-    console.log("Generated video URL:", url);
-    
-    setCurrentVideoUrl(url);
+  const handlePlay = (movie) => {
+    userDataManager.addToWatchHistory(movie);
     setSelectedMovie(movie);
-    setIsPlayerOpen(true);
-  }, [apiSource, getVideoUrl]);
+    setIsDetailsOpen(true);
+  };
 
   // Effect to update the video URL when the API source changes
   useEffect(() => {
@@ -288,6 +282,13 @@ function NetflixPage() {
       fetchTvShowDetails();
     }
   }, [selectedMovie]);
+
+  // Add useEffect to load user data
+  useEffect(() => {
+    const userData = userDataManager.getUserData();
+    setMyList(userData.myList);
+    // You can load other user data here as needed
+  }, []);
 
   // Loading and error states
   if (loading) {

@@ -36,101 +36,132 @@ const MovieList = ({
   };
 
   return (
-    <Box 
-      sx={{ 
-        px: 2, 
-        mb: 4,
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: backdropPath ? 
-            `linear-gradient(to bottom, rgba(20, 20, 20, 0.9), rgba(20, 20, 20, 0.7)), url(${TMDB_IMAGE_BASE_URL}/original${backdropPath})` : 
-            'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          zIndex: -1,
-          opacity: 0.3,
-        },
-      }}
-    >
-      <Typography
-        variant="h4"
-        sx={{
-          color: 'white',
-          mb: 2,
-          fontWeight: 'bold',
-          position: 'relative',
-          zIndex: 1,
-        }}
-      >
-        {title}
-      </Typography>
+    <Box sx={{ position: 'relative', mb: 0 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'flex-start',
+        mb: 1.5,
+        px: { xs: 1, sm: 2 },
+        position: 'relative'
+      }}>
+        <Typography 
+          variant="h5" 
+          sx={{ 
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+            textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              bottom: '-8px',
+              left: 0,
+              width: '40px',
+              height: '3px',
+              background: '#E50914',
+              borderRadius: '2px'
+            }
+          }}
+        >
+          {title}
+        </Typography>
+      </Box>
+
       <Box sx={{ position: 'relative' }}>
         <IconButton
           onClick={() => handleScroll('left')}
           sx={{
             position: 'absolute',
-            left: -20,
+            left: 0,
             top: '50%',
             transform: 'translateY(-50%)',
-            zIndex: 2,
-            bgcolor: 'rgba(0,0,0,0.5)',
+            bgcolor: 'rgba(0, 0, 0, 0.7)',
             color: 'white',
+            zIndex: 2,
             '&:hover': {
-              bgcolor: 'rgba(0,0,0,0.8)',
+              bgcolor: 'rgba(0, 0, 0, 0.9)',
+              transform: 'translateY(-50%) scale(1.1)'
             },
+            transition: 'all 0.3s ease-in-out',
+            display: { xs: 'none', sm: 'flex' },
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
           <ChevronLeftIcon />
         </IconButton>
+
         <Box
           id={categoryId}
           sx={{
             display: 'flex',
             overflowX: 'auto',
-            gap: 1,
             scrollBehavior: 'smooth',
+            gap: { xs: 1, sm: 1.5, md: 2 },
+            px: { xs: 1, sm: 2 },
+            py: 1,
             '&::-webkit-scrollbar': {
-              display: 'none',
+              display: 'none'
             },
             msOverflowStyle: 'none',
             scrollbarWidth: 'none',
+            position: 'relative',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: '100px',
+              background: 'linear-gradient(to right, transparent, rgba(20, 20, 20, 0.8))',
+              pointerEvents: 'none',
+              opacity: 0,
+              transition: 'opacity 0.3s ease-in-out',
+            },
+            '&:hover::after': {
+              opacity: 1,
+            }
           }}
         >
-          {filteredMovies.map((movie, movieIndex) => (
-            <MovieCard
-              key={`${movie.id}-${movieIndex}`}
-              movie={movie}
-              hoveredMovie={hoveredMovie}
-              setHoveredMovie={setHoveredMovie}
-              handlePlay={handlePlay}
-              toggleMyList={toggleMyList}
-              isInMyList={isInMyList}
-              formatDuration={formatDuration}
-              setSelectedMovie={setSelectedMovie}
-              setIsDetailsOpen={setIsDetailsOpen}
-              uniqueId={`${categoryId}-${movie.id}-${movieIndex}`}
-            />
-          ))}
+          <Grid container spacing={{ xs: 1, sm: 1.5, md: 2 }} sx={{ flexWrap: 'nowrap', width: 'auto' }}>
+            {filteredMovies.map((movie, index) => (
+              <MovieCard
+                key={`${categoryId}-${movie.id}-${index}`}
+                movie={movie}
+                hoveredMovie={hoveredMovie}
+                setHoveredMovie={setHoveredMovie}
+                handlePlay={handlePlay}
+                toggleMyList={toggleMyList}
+                isInMyList={isInMyList}
+                formatDuration={formatDuration}
+                setSelectedMovie={setSelectedMovie}
+                setIsDetailsOpen={setIsDetailsOpen}
+                uniqueId={`${categoryId}-${movie.id}-${index}`}
+              />
+            ))}
+          </Grid>
         </Box>
+
         <IconButton
           onClick={() => handleScroll('right')}
           sx={{
             position: 'absolute',
-            right: -20,
+            right: 0,
             top: '50%',
             transform: 'translateY(-50%)',
-            zIndex: 2,
-            bgcolor: 'rgba(0,0,0,0.5)',
+            bgcolor: 'rgba(0, 0, 0, 0.7)',
             color: 'white',
+            zIndex: 2,
             '&:hover': {
-              bgcolor: 'rgba(0,0,0,0.8)',
+              bgcolor: 'rgba(0, 0, 0, 0.9)',
+              transform: 'translateY(-50%) scale(1.1)'
             },
+            transition: 'all 0.3s ease-in-out',
+            display: { xs: 'none', sm: 'flex' },
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
           <ChevronRightIcon />
