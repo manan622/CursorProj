@@ -1,27 +1,38 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    visualizer({ open: true })
+    visualizer({
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
+  base: '/CursorProj/',
   resolve: {
     alias: {
-      'styled-components': 'styled-components',
+      'styled-components': path.resolve(__dirname, 'node_modules/styled-components'),
     },
   },
   build: {
-    chunkSizeWarningLimit: 600,
-    outDir: 'build',
     sourcemap: true,
     rollupOptions: {
-      external: ['styled-components'],
       output: {
         manualChunks: {
-          'styled-components': ['styled-components'],
+          vendor: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            '@mui/material',
+            '@mui/icons-material',
+            'styled-components',
+            'framer-motion',
+          ],
         },
       },
     },
