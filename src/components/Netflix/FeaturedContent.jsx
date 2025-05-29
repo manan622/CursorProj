@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Box, Typography, IconButton, Tooltip, Button } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, Button, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import AddIcon from '@mui/icons-material/Add';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
+import VolumeUpIcon from '@mui/icons-material/VolumeUp';
+import VolumeOffIcon from '@mui/icons-material/VolumeOff';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -18,16 +18,30 @@ const FeaturedContent = ({
   setSelectedMovie,
   setIsDetailsOpen
 }) => {
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const theme = useTheme();
+  const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
+
+  useEffect(() => {
+    const video = document.getElementById('featured-video');
+    if (video) {
+      video.muted = isMuted;
+    }
+  }, [isMuted]);
+
+  const handleVolumeToggle = () => {
+    setIsMuted(!isMuted);
+  };
 
   return (
     <Box
       sx={{
         position: 'relative',
         width: '100%',
-        height: { xs: '60vh', sm: '70vh', md: '80vh' },
+        height: isAndroid ? '60vh' : '70vh',
         overflow: 'hidden',
+        background: `url(${TMDB_IMAGE_BASE_URL}/original${featuredMovies[currentFeaturedIndex]?.backdrop_path}) center/cover no-repeat`,
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -36,61 +50,28 @@ const FeaturedContent = ({
           right: 0,
           bottom: 0,
           background: 'linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%)',
-          zIndex: 1,
-          pointerEvents: 'none'
-        },
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'linear-gradient(to right, rgba(0,0,0,0.4) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.4) 100%)',
-          zIndex: 1,
-          pointerEvents: 'none'
+          zIndex: 1
         }
       }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {featuredMovies.map((movie, index) => (
-        <Box
-          key={movie.id}
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: currentIndex === index ? 1 : 0,
-            transform: `scale(${currentIndex === index ? 1 : 1.1})`,
-            transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)',
-              zIndex: 1
-            }
-          }}
-        >
-          <Box
-            component="img"
-            src={`${TMDB_IMAGE_BASE_URL}/original${movie.backdrop_path}`}
-            alt={movie.title || movie.name}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              filter: 'brightness(0.8)',
-              transform: `scale(${currentIndex === index ? 1 : 1.1})`,
-              transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
-          />
-        </Box>
-      ))}
+      <video
+        id="featured-video"
+        src={featuredMovies[currentFeaturedIndex]?.videoUrl}
+        autoPlay
+        loop
+        muted={isMuted}
+        playsInline
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          position: 'absolute',
+          top: 0,
+          left: 0
+        }}
+      />
 
       <Box
         sx={{
@@ -98,152 +79,92 @@ const FeaturedContent = ({
           bottom: 0,
           left: 0,
           right: 0,
-          p: { xs: 2, sm: 3, md: 4 },
+          padding: isAndroid ? '1.5rem' : '4rem',
           zIndex: 2,
-          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 2,
-          maxWidth: '1200px',
-          mx: 'auto'
+          gap: isAndroid ? 1.5 : 3
         }}
       >
         <Typography
-          variant="h2"
+          variant="h3"
           sx={{
             color: 'white',
-            fontSize: { xs: '2rem', sm: '3rem', md: '4rem' },
             fontWeight: 'bold',
+            fontSize: isAndroid ? '1.5rem' : { xs: '2rem', sm: '3rem', md: '4rem' },
             textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
-            opacity: 0,
-            transform: 'translateY(20px)',
-            animation: 'fadeInUp 0.8s ease-out forwards',
-            '@keyframes fadeInUp': {
-              '0%': {
-                opacity: 0,
-                transform: 'translateY(20px)'
-              },
-              '100%': {
-                opacity: 1,
-                transform: 'translateY(0)'
-              }
-            }
+            lineHeight: 1.2
           }}
         >
-          {featuredMovies[currentIndex]?.title || featuredMovies[currentIndex]?.name}
+          {featuredMovies[currentFeaturedIndex]?.title || featuredMovies[currentFeaturedIndex]?.name}
         </Typography>
 
         <Typography
           variant="body1"
           sx={{
             color: 'rgba(255, 255, 255, 0.9)',
-            maxWidth: { xs: '100%', sm: '80%', md: '60%' },
-            fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
-            lineHeight: 1.5,
-            textShadow: '1px 1px 2px rgba(0,0,0,0.5)',
-            opacity: 0,
-            transform: 'translateY(20px)',
-            animation: 'fadeInUp 0.8s ease-out 0.2s forwards',
-            '@keyframes fadeInUp': {
-              '0%': {
-                opacity: 0,
-                transform: 'translateY(20px)'
-              },
-              '100%': {
-                opacity: 1,
-                transform: 'translateY(0)'
-              }
-            }
+            mb: 2,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontSize: isAndroid ? '1.1rem' : { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+            lineHeight: '1.5',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
+            maxWidth: {
+              xs: '100%',
+              sm: '100%',
+              md: '50%'
+            },
+            transition: 'max-width 0.3s ease-in-out'
           }}
         >
-          {featuredMovies[currentIndex]?.overview}
+          {featuredMovies[currentFeaturedIndex]?.overview}
         </Typography>
 
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            mt: 2,
-            opacity: 0,
-            transform: 'translateY(20px)',
-            animation: 'fadeInUp 0.8s ease-out 0.4s forwards',
-            '@keyframes fadeInUp': {
-              '0%': {
-                opacity: 0,
-                transform: 'translateY(20px)'
-              },
-              '100%': {
-                opacity: 1,
-                transform: 'translateY(0)'
-              }
-            }
-          }}
-        >
+        <Box sx={{ display: 'flex', gap: isAndroid ? 1.5 : 3, flexWrap: 'wrap' }}>
           <Button
             variant="contained"
             startIcon={<PlayArrowIcon />}
-            onClick={() => handlePlay(featuredMovies[currentIndex])}
+            onClick={() => handlePlay(featuredMovies[currentFeaturedIndex])}
             sx={{
-              bgcolor: 'white',
-              color: 'black',
+              bgcolor: '#E50914',
+              color: 'white',
+              padding: isAndroid ? '8px 16px' : '8px 24px',
+              fontSize: isAndroid ? '0.9rem' : '1rem',
               '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                bgcolor: '#f40612',
+                transform: 'scale(1.05)'
               },
-              px: 3,
-              py: 1,
-              borderRadius: '4px',
-              textTransform: 'none',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.2s ease-in-out',
+              minWidth: isAndroid ? '120px' : '120px',
+              height: isAndroid ? '36px' : '40px'
             }}
           >
             Play
           </Button>
-          <Button
-            variant="outlined"
-            startIcon={<AddIcon />}
-            onClick={() => toggleMyList(featuredMovies[currentIndex])}
-            sx={{
-              borderColor: 'rgba(255, 255, 255, 0.5)',
-              color: 'white',
-              '&:hover': {
-                borderColor: 'white',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-              },
-              px: 3,
-              py: 1,
-              borderRadius: '4px',
-              textTransform: 'none',
-              fontSize: '1.1rem',
-              backdropFilter: 'blur(4px)',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            My List
-          </Button>
+
           <Button
             variant="outlined"
             startIcon={<InfoIcon />}
             onClick={() => {
-              setSelectedMovie(featuredMovies[currentIndex]);
+              setSelectedMovie(featuredMovies[currentFeaturedIndex]);
               setIsDetailsOpen(true);
             }}
             sx={{
-              borderColor: 'rgba(255, 255, 255, 0.5)',
+              borderColor: 'white',
               color: 'white',
+              padding: isAndroid ? '8px 16px' : '8px 24px',
+              fontSize: isAndroid ? '0.9rem' : '1rem',
               '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.1)',
                 borderColor: 'white',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
+                transform: 'scale(1.05)'
               },
-              px: 3,
-              py: 1,
-              borderRadius: '4px',
-              textTransform: 'none',
-              fontSize: '1.1rem',
-              backdropFilter: 'blur(4px)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.2s ease-in-out',
+              minWidth: isAndroid ? '120px' : '120px',
+              height: isAndroid ? '36px' : '40px'
             }}
           >
             More Info
@@ -251,36 +172,37 @@ const FeaturedContent = ({
         </Box>
       </Box>
 
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: 1,
-          zIndex: 2
-        }}
-      >
-        {featuredMovies.map((_, index) => (
-          <Box
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            sx={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              bgcolor: currentIndex === index ? 'white' : 'rgba(255, 255, 255, 0.3)',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              '&:hover': {
-                bgcolor: currentIndex === index ? 'white' : 'rgba(255, 255, 255, 0.5)',
-                transform: 'scale(1.2)'
-              }
-            }}
-          />
-        ))}
-      </Box>
+      <AnimatePresence>
+        {(isHovered || isAndroid) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <IconButton
+              onClick={handleVolumeToggle}
+              sx={{
+                position: 'absolute',
+                top: isAndroid ? '0.75rem' : '2rem',
+                right: isAndroid ? '0.75rem' : '2rem',
+                bgcolor: 'rgba(0,0,0,0.5)',
+                color: 'white',
+                padding: isAndroid ? '8px' : '8px',
+                '&:hover': {
+                  bgcolor: 'rgba(0,0,0,0.7)'
+                },
+                zIndex: 2,
+                '& .MuiSvgIcon-root': {
+                  fontSize: isAndroid ? '20px' : '24px'
+                }
+              }}
+            >
+              {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+            </IconButton>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Box>
   );
 };

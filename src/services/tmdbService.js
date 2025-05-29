@@ -59,10 +59,18 @@ export const fetchFeaturedContent = async () => {
 
 export const fetchCategoriesData = async (categories, mediaType = 'movie') => {
   try {
+    const usedMovieIds = new Set(); // Track used movie IDs
     const categoriesData = await Promise.all(
       categories.map(async (category) => {
+        const params = new URLSearchParams({
+          api_key: TMDB_API_KEY,
+          language: 'en-US',
+          page: '1',
+          ...category.params
+        });
+
         const response = await fetch(
-          `${TMDB_BASE_URL}${category.endpoint}?api_key=${TMDB_API_KEY}&language=en-US&page=1`
+          `${TMDB_BASE_URL}${category.endpoint}?${params.toString()}`
         );
         
         if (!response.ok) {
@@ -80,9 +88,12 @@ export const fetchCategoriesData = async (categories, mediaType = 'movie') => {
           backdropPath = firstItemData.backdrop_path;
         }
         
-        return {
-          ...category,
-          movies: data.results.slice(0, 6).map(item => {
+        // Filter out movies that have already been used in other categories
+        const uniqueMovies = data.results
+          .filter(item => !usedMovieIds.has(item.id))
+          .slice(0, 6)
+          .map(item => {
+            usedMovieIds.add(item.id); // Add movie ID to used set
             if (mediaType === 'tv') {
               return {
                 ...item,
@@ -92,7 +103,11 @@ export const fetchCategoriesData = async (categories, mediaType = 'movie') => {
               };
             }
             return { ...item, mediaType: 'movie' };
-          }),
+          });
+        
+        return {
+          ...category,
+          movies: uniqueMovies,
           backdrop_path: backdropPath,
         };
       })

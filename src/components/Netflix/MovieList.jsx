@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, Typography, IconButton, Grid, Card, CardMedia } from '@mui/material';
+import { Box, Typography, IconButton, Grid, Card, CardMedia, useMediaQuery, useTheme } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import MovieCard from './MovieCard';
+import { motion } from 'framer-motion';
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
@@ -21,6 +22,8 @@ const MovieList = ({
   setIsDetailsOpen,
   contentFilter = () => true
 }) => {
+  const theme = useTheme();
+  const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
   const filteredMovies = movies.filter(contentFilter);
 
   if (filteredMovies.length === 0) {
@@ -36,61 +39,55 @@ const MovieList = ({
   };
 
   return (
-    <Box sx={{ position: 'relative', mb: 0 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'flex-start',
-        mb: 1.5,
-        px: { xs: 1, sm: 2 },
-        position: 'relative'
-      }}>
-        <Typography 
-          variant="h5" 
-          sx={{ 
+    <Box sx={{ mb: 0 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
             color: 'white',
-            fontWeight: 'bold',
-            fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
-            textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-            position: 'relative',
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: '-8px',
-              left: 0,
-              width: '40px',
-              height: '3px',
-              background: '#E50914',
-              borderRadius: '2px'
-            }
+            fontWeight: 600,
+            mb: 0,
+            px: { xs: 2, sm: 3 },
+            fontSize: isAndroid ? '1.2rem' : '1.5rem',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
           }}
         >
           {title}
         </Typography>
-      </Box>
+      </motion.div>
 
       <Box sx={{ position: 'relative' }}>
         <IconButton
           onClick={() => handleScroll('left')}
           sx={{
             position: 'absolute',
-            left: 0,
+            left: isAndroid ? 4 : 8,
             top: '50%',
             transform: 'translateY(-50%)',
-            bgcolor: 'rgba(0, 0, 0, 0.7)',
+            bgcolor: 'rgba(0, 0, 0, 0.8)',
             color: 'white',
             zIndex: 2,
+            width: isAndroid ? 32 : 40,
+            height: isAndroid ? 32 : 40,
             '&:hover': {
-              bgcolor: 'rgba(0, 0, 0, 0.9)',
+              bgcolor: 'rgba(229, 9, 20, 0.9)',
               transform: 'translateY(-50%) scale(1.1)'
             },
             transition: 'all 0.3s ease-in-out',
             display: { xs: 'none', sm: 'flex' },
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
           }}
         >
-          <ChevronLeftIcon />
+          <ChevronLeftIcon sx={{ fontSize: isAndroid ? 20 : 24 }} />
         </IconButton>
 
         <Box
@@ -100,7 +97,7 @@ const MovieList = ({
             overflowX: 'auto',
             scrollBehavior: 'smooth',
             gap: { xs: 1, sm: 1.5, md: 2 },
-            px: { xs: 1, sm: 2 },
+            px: { xs: 2, sm: 3 },
             py: 1,
             '&::-webkit-scrollbar': {
               display: 'none'
@@ -114,8 +111,8 @@ const MovieList = ({
               right: 0,
               top: 0,
               bottom: 0,
-              width: '100px',
-              background: 'linear-gradient(to right, transparent, rgba(20, 20, 20, 0.8))',
+              width: '150px',
+              background: 'linear-gradient(to right, transparent, rgba(20, 20, 20, 0.95))',
               pointerEvents: 'none',
               opacity: 0,
               transition: 'opacity 0.3s ease-in-out',
@@ -125,7 +122,21 @@ const MovieList = ({
             }
           }}
         >
-          <Grid container spacing={{ xs: 1, sm: 1.5, md: 2 }} sx={{ flexWrap: 'nowrap', width: 'auto' }}>
+          <Grid 
+            container 
+            spacing={{ xs: 1, sm: 1.5, md: 1.5 }} 
+            sx={{ 
+              flexWrap: 'nowrap', 
+              width: 'auto',
+              '& > *': {
+                transition: 'transform 0.3s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.02)',
+                  zIndex: 1
+                }
+              }
+            }}
+          >
             {filteredMovies.map((movie, index) => (
               <MovieCard
                 key={`${categoryId}-${movie.id}-${index}`}
@@ -148,23 +159,26 @@ const MovieList = ({
           onClick={() => handleScroll('right')}
           sx={{
             position: 'absolute',
-            right: 0,
+            right: isAndroid ? 4 : 8,
             top: '50%',
             transform: 'translateY(-50%)',
-            bgcolor: 'rgba(0, 0, 0, 0.7)',
+            bgcolor: 'rgba(0, 0, 0, 0.8)',
             color: 'white',
             zIndex: 2,
+            width: isAndroid ? 32 : 40,
+            height: isAndroid ? 32 : 40,
             '&:hover': {
-              bgcolor: 'rgba(0, 0, 0, 0.9)',
+              bgcolor: 'rgba(229, 9, 20, 0.9)',
               transform: 'translateY(-50%) scale(1.1)'
             },
             transition: 'all 0.3s ease-in-out',
             display: { xs: 'none', sm: 'flex' },
             backdropFilter: 'blur(10px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
           }}
         >
-          <ChevronRightIcon />
+          <ChevronRightIcon sx={{ fontSize: isAndroid ? 20 : 24 }} />
         </IconButton>
       </Box>
     </Box>

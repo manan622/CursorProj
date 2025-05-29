@@ -48,14 +48,13 @@ const movieCategories = [
   { title: 'Trending Now', endpoint: '/trending/movie/week' },
   { title: 'Popular on Netflix', endpoint: '/movie/popular' },
   { title: 'New Releases', endpoint: '/movie/now_playing' },
-  { title: 'Top Rated', endpoint: '/movie/top_rated' },
+  { title: 'Top Rated', endpoint: '/movie/top_rated' }
 ];
 
 const tvShowCategories = [
+  { title: 'Trending TV Shows', endpoint: '/trending/tv/week' },
   { title: 'Popular TV Shows', endpoint: '/tv/popular' },
-  { title: 'Top Rated TV Shows', endpoint: '/tv/top_rated' },
-  { title: 'TV Shows Airing Today', endpoint: '/tv/airing_today' },
-  { title: 'Currently On Air', endpoint: '/tv/on_the_air' },
+  { title: 'Top Rated TV Shows', endpoint: '/tv/top_rated' }
 ];
 
 export const apiSources = [
@@ -180,23 +179,30 @@ function NetflixPage() {
     return myList.some(movie => movie.id === movieId);
   }, [myList]);
 
-  const handlePlay = (movie) => {
-    userDataManager.addToWatchHistory(movie);
-    setSelectedMovie(movie);
-    setIsDetailsOpen(true);
-  };
-
-  // Effect to update the video URL when the API source changes
-  useEffect(() => {
-    if (isPlayerOpen && selectedMovie) {
-      // Only update the URL if the player is already open
-      const url = getVideoUrl(selectedMovie, apiSource);
-      setCurrentVideoUrl(url);
-      
-      // Don't set isPlayerOpen here, as we don't want to open the player
-      // when only the API source changes
+  const handlePlay = useCallback((movie) => {
+    // Debug: Log whether we're using absolute numbering or not
+    if (movie.mediaType === 'tv') {
+      console.log("Playing TV episode with:", {
+        absoluteNumbering: movie.absoluteEpisodeNumber ? "yes" : "no",
+        absoluteEpisodeNumber: movie.absoluteEpisodeNumber,
+        season: movie.currentSeason,
+        episode: movie.currentEpisode
+      });
     }
-  }, [apiSource, selectedMovie, isPlayerOpen, getVideoUrl]);
+    
+    const url = getVideoUrl(movie, apiSource);
+    console.log("Generated video URL:", url);
+    
+    if (url) {
+      setCurrentVideoUrl(url);
+      setSelectedMovie(movie);
+      setIsPlayerOpen(true);
+    } else {
+      // If no video URL is available, show details instead
+      setSelectedMovie(movie);
+      setIsDetailsOpen(true);
+    }
+  }, [apiSource, getVideoUrl]);
 
   const handleApiPopupOpen = () => {
     setIsApiPopupOpen(true);

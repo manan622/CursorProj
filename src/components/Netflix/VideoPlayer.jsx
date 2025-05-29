@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Dialog, DialogContent, IconButton, Button } from '@mui/material';
+import { Dialog, DialogContent, IconButton, Button, Box, CircularProgress, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
   const [videoKey, setVideoKey] = useState('');
@@ -118,131 +119,158 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen }) => {
   }, [videoUrl]);
   
   return (
-    <Dialog 
-      sx={{ backdropFilter: 'blur(10px)' }} 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      // Optimize Dialog component
-      TransitionProps={{
-        timeout: { enter: 300, exit: 200 }
+      fullScreen
+      PaperProps={{
+        sx: {
+          bgcolor: 'black',
+          boxShadow: 'none',
+          borderRadius: 0,
+          '& .MuiDialog-paper': {
+            bgcolor: 'black'
+          }
+        }
       }}
-      keepMounted={false}
     >
-      <div>
-        <DialogContent 
-          sx={{ 
-            position: 'relative', 
-            padding: 0, 
-            height: '750px',
-            '&::-webkit-scrollbar': { display: 'none' },
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none'
+      <Box
+        sx={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          bgcolor: 'black'
+        }}
+      >
+        {/* Close Button */}
+        <IconButton
+          onClick={onClose}
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            zIndex: 10,
+            color: 'white',
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            '&:hover': {
+              bgcolor: 'rgba(0, 0, 0, 0.7)',
+              transform: 'scale(1.1)'
+            },
+            transition: 'all 0.2s ease-in-out'
           }}
         >
-          <div>
-            <IconButton
-              onClick={onClose}
+          <CloseIcon />
+        </IconButton>
+
+        {/* API Source Button */}
+        <IconButton
+          onClick={onApiPopupOpen}
+          sx={{
+            position: 'absolute',
+            top: 16,
+            right: 72, // Position it 56px (button width) + 16px (spacing) from the right edge
+            zIndex: 10,
+            color: 'white',
+            bgcolor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            '&:hover': {
+              bgcolor: 'rgba(0, 0, 0, 0.7)',
+              transform: 'scale(1.1)'
+            },
+            transition: 'all 0.2s ease-in-out'
+          }}
+        >
+          <SettingsIcon />
+        </IconButton>
+
+        {/* Video Container */}
+        <Box
+          sx={{
+            flex: 1,
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'black',
+            '& iframe': {
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              position: 'absolute',
+              top: 0,
+              left: 0
+            }
+          }}
+        >
+          {videoUrl ? (
+            <iframe
+              src={videoUrl}
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none'
+              }}
+            />
+          ) : (
+            <Box
               sx={{
-                position: 'relative',
-                top: 7,
-                right: -15,
-                left: '50%',
-                transform: 'translate(-50%, 0)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: 'white',
-                zIndex: 2
+                gap: 2
               }}
             >
-              <CloseIcon />
-            </IconButton>
-          </div>
-          {videoUrl && (
-            <div style={{ 
-              position: 'relative', 
-              top: '10px',
-              width: '100%', 
-              height: '700px',
-              backgroundColor: 'rgba(31, 31, 31, 0.8)',
-              backdropFilter: 'blur(10px)',
-              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
-              overflow: 'hidden',
-              willChange: 'transform', // Hardware acceleration hint
-              transform: 'translateZ(0)', // Force GPU rendering
-            }}>
-              <div style={{
-                position: 'relative',
-                top: '0%',
-                left: '50%',
-                width: '100%',
-                height: '400px',
-                transform: 'translate(-50%, 0)',
-                backgroundColor: '#000',
-                borderRadius: '2px',
-                overflow: 'hidden',
-                willChange: 'transform', // Hardware acceleration hint
-              }}>
-                {/* Loading indicator */}
-                {isLoading && (
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: '#000',
-                      zIndex: 1
-                    }}
-                  >
-                    <div 
-                      style={{
-                        width: '40px',
-                        height: '40px',
-                        border: '4px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '50%',
-                        borderTopColor: '#E50914',
-                        animation: 'spin 1s linear infinite'
-                      }}
-                    />
-                  </div>
-                )}
-                
-                <iframe
-                  ref={iframeRef}
-                  key={videoKey}
-                  src={optimizedVideoUrl}
-                  onLoad={handleIframeLoaded}
-                  {...iframeAttrs}
-                />
-              </div>
-              <div>
-                <Button
-                  onClick={onApiPopupOpen}
-                  variant="contained"
-                  color="primary"
-                  sx={{
-                    position: 'relative',
-                    top: 20,
-                    left: '50%',
-                    transform: 'translate(-50%, 0)',
-                    zIndex: 1,
-                    borderRadius: '20px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    color: 'white',
-                  }}
-                >
-                  Source
-                </Button>
-              </div>
-            </div>
+              <Typography variant="h5" sx={{ textAlign: 'center' }}>
+                No video source available
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={onApiPopupOpen}
+                sx={{
+                  bgcolor: '#E50914',
+                  '&:hover': {
+                    bgcolor: '#F40612'
+                  }
+                }}
+              >
+                Change API Source
+              </Button>
+            </Box>
           )}
-        </DialogContent>
-      </div>
+        </Box>
+
+        {/* Loading Overlay */}
+        {!videoUrl && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 5
+            }}
+          >
+            <CircularProgress sx={{ color: '#E50914' }} />
+          </Box>
+        )}
+      </Box>
     </Dialog>
   );
 };

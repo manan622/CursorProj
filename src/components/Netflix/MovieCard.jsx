@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Typography, IconButton, Card, CardMedia, Paper, Tooltip, Grid, Skeleton } from '@mui/material';
+import { Box, Typography, IconButton, Card, CardMedia, Paper, Tooltip, Grid, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
@@ -23,6 +23,8 @@ const MovieCard = ({
 }) => {
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const theme = useTheme();
+  const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
 
   // Function to get the best image format based on browser support
   const getOptimizedImageUrl = (path) => {
@@ -83,11 +85,17 @@ const MovieCard = ({
   };
 
   return (
-    <Grid item xs={6} sm={4} md={3} lg={2.4} sx={{ aspectRatio: '2/3', minHeight: { xs: '180px', sm: '240px', md: '300px' } }}>
+    <Grid item xs={isAndroid ? 6 : 6} sm={4} md={3} lg={2.4} sx={{ 
+      aspectRatio: '2/3', 
+      minHeight: isAndroid ? '320px' : { xs: '180px', sm: '240px', md: '300px' },
+      width: isAndroid ? '100%' : 'auto',
+      maxWidth: isAndroid ? '100%' : 'none'
+    }}>
       <Card
         sx={{
+          margin: '10px',
           width: '100%',
-          height: '96%',
+          height: '90%',
           bgcolor: 'transparent',
           cursor: 'pointer',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -164,7 +172,7 @@ const MovieCard = ({
                 bottom: 0,
                 bgcolor: 'rgba(24, 24, 24, 0.85)',
                 backdropFilter: 'blur(5px)',
-                p: { xs: 1, sm: 1.5, md: 2 },
+                p: isAndroid ? 2 : { xs: 1, sm: 1.5, md: 2 },
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
@@ -190,7 +198,7 @@ const MovieCard = ({
                 <Typography variant="h6" sx={{ 
                   color: 'white', 
                   mb: 0.5, 
-                  fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' }, 
+                  fontSize: isAndroid ? '1.4rem' : { xs: '0.8rem', sm: '0.9rem', md: '1rem' }, 
                   fontWeight: 'bold',
                   textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
                 }}>
@@ -202,11 +210,11 @@ const MovieCard = ({
                     color: 'rgba(255, 255, 255, 0.9)', 
                     mb: 1,
                     display: '-webkit-box',
-                    WebkitLineClamp: { xs: 2, sm: 3 },
+                    WebkitLineClamp: isAndroid ? 4 : { xs: 2, sm: 3 },
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
                     lineHeight: '1.4',
                     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}
@@ -216,13 +224,13 @@ const MovieCard = ({
                 <Box sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 0.5, 
+                  gap: isAndroid ? 2 : 1, 
                   flexWrap: 'wrap',
                   mb: 1
                 }}>
                   <Typography variant="body2" sx={{ 
                     color: '#46d369', 
-                    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
                     fontWeight: 'bold',
                     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}>
@@ -230,7 +238,7 @@ const MovieCard = ({
                   </Typography>
                   <Typography variant="body2" sx={{ 
                     color: 'rgba(255, 255, 255, 0.9)', 
-                    fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
                     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}>
                     • {formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120)}
@@ -238,7 +246,7 @@ const MovieCard = ({
                   {movie.release_date && (
                     <Typography variant="body2" sx={{ 
                       color: 'rgba(255, 255, 255, 0.9)', 
-                      fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                      fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
                       textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                     }}>
                       • {new Date(movie.release_date).getFullYear()}
@@ -247,7 +255,7 @@ const MovieCard = ({
                   {movie.first_air_date && (
                     <Typography variant="body2" sx={{ 
                       color: 'rgba(255, 255, 255, 0.9)', 
-                      fontSize: { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                      fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
                       textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                     }}>
                       • {new Date(movie.first_air_date).getFullYear()}
@@ -258,7 +266,7 @@ const MovieCard = ({
 
               <Box sx={{ 
                 display: 'flex', 
-                gap: 1, 
+                gap: isAndroid ? 2 : 1, 
                 justifyContent: 'center',
                 mt: 'auto',
                 position: 'relative',
@@ -274,7 +282,7 @@ const MovieCard = ({
                     sx={{
                       bgcolor: 'rgba(255, 255, 255, 0.15)',
                       color: 'white',
-                      padding: { xs: '4px', sm: '6px', md: '8px' },
+                      padding: isAndroid ? '12px' : { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'
@@ -282,14 +290,17 @@ const MovieCard = ({
                       transition: 'all 0.2s ease-in-out',
                       backdropFilter: 'blur(4px)',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      '& .MuiSvgIcon-root': {
+                        fontSize: isAndroid ? '1.8rem' : { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                      }
                     }}
                   >
-                    <PlayArrowIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
+                    <PlayArrowIcon />
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title={isInMyList(movie) ? "Remove from My List" : "Add to My List"}>
+                <Tooltip title={isInMyList(movie.id) ? "Remove from My List" : "Add to My List"}>
                   <IconButton
                     size="small"
                     onClick={(e) => {
@@ -298,8 +309,8 @@ const MovieCard = ({
                     }}
                     sx={{
                       bgcolor: 'rgba(255, 255, 255, 0.15)',
-                      color: isInMyList(movie) ? '#E50914' : 'white',
-                      padding: { xs: '4px', sm: '6px', md: '8px' },
+                      color: 'white',
+                      padding: isAndroid ? '12px' : { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'
@@ -307,10 +318,13 @@ const MovieCard = ({
                       transition: 'all 0.2s ease-in-out',
                       backdropFilter: 'blur(4px)',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      '& .MuiSvgIcon-root': {
+                        fontSize: isAndroid ? '1.8rem' : { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                      }
                     }}
                   >
-                    <AddIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
+                    <AddIcon />
                   </IconButton>
                 </Tooltip>
 
@@ -325,7 +339,7 @@ const MovieCard = ({
                     sx={{
                       bgcolor: 'rgba(255, 255, 255, 0.15)',
                       color: 'white',
-                      padding: { xs: '4px', sm: '6px', md: '8px' },
+                      padding: isAndroid ? '12px' : { xs: '4px', sm: '6px', md: '8px' },
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'
@@ -333,10 +347,13 @@ const MovieCard = ({
                       transition: 'all 0.2s ease-in-out',
                       backdropFilter: 'blur(4px)',
                       border: '1px solid rgba(255, 255, 255, 0.1)',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      '& .MuiSvgIcon-root': {
+                        fontSize: isAndroid ? '1.8rem' : { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                      }
                     }}
                   >
-                    <ExpandMoreIcon sx={{ fontSize: { xs: '0.9rem', sm: '1rem', md: '1.25rem' } }} />
+                    <ExpandMoreIcon />
                   </IconButton>
                 </Tooltip>
               </Box>

@@ -530,22 +530,30 @@ const BlankPageTemplate = () => {
         {/* Movie Info */}
         <Box sx={{
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: 3,
+          flexWrap: 'nowrap',
+          gap: { xs: 1, sm: 2, md: 3 },
           mb: 4,
-          justifyContent: 'center'
+          justifyContent: 'center',
+          width: '100%',
+          overflowX: 'auto',
+          '&::-webkit-scrollbar': {
+            display: 'none'
+          },
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none'
         }}>
           <Box sx={{
             bgcolor: 'rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
-            p: 2,
-            minWidth: '200px',
+            p: { xs: 1, sm: 2 },
+            minWidth: { xs: '100px', sm: '150px', md: '200px' },
+            flexShrink: 0,
             textAlign: 'center'
           }}>
-            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 0.5 }}>
+            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 0.5, fontSize: { xs: '0.7rem', sm: '0.8rem' } }}>
               Release Date
             </Typography>
-            <Typography variant="body1">
+            <Typography variant="body1" sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
               {movieData?.releaseDate ? new Date(movieData.releaseDate).toLocaleDateString() : 'N/A'}
             </Typography>
           </Box>
@@ -553,14 +561,15 @@ const BlankPageTemplate = () => {
           <Box sx={{
             bgcolor: 'rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
-            p: 2,
-            minWidth: '200px',
+            p: { xs: 1, sm: 2 },
+            minWidth: { xs: '100px', sm: '150px', md: '200px' },
+            flexShrink: 0,
             textAlign: 'center'
           }}>
-            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 0.5 }}>
+            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 0.5, fontSize: { xs: '0.7rem', sm: '0.8rem' } }}>
               Rating
             </Typography>
-            <Typography variant="body1">
+            <Typography variant="body1" sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
               {movieData?.rating ? `${movieData.rating}/10` : 'N/A'}
             </Typography>
           </Box>
@@ -568,14 +577,15 @@ const BlankPageTemplate = () => {
           <Box sx={{
             bgcolor: 'rgba(255, 255, 255, 0.1)',
             borderRadius: 2,
-            p: 2,
-            minWidth: '200px',
+            p: { xs: 1, sm: 2 },
+            minWidth: { xs: '100px', sm: '150px', md: '200px' },
+            flexShrink: 0,
             textAlign: 'center'
           }}>
-            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 0.5 }}>
+            <Typography variant="subtitle2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: 0.5, fontSize: { xs: '0.7rem', sm: '0.8rem' } }}>
               Duration
             </Typography>
-            <Typography variant="body1">
+            <Typography variant="body1" sx={{ fontSize: { xs: '0.8rem', sm: '1rem' } }}>
               {movieData?.duration || 'N/A'}
             </Typography>
           </Box>
