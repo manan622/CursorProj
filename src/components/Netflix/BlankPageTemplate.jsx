@@ -5,6 +5,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import VideoPlayer from './VideoPlayer';
 import ApiSourcePopup from './ApiSourcePopup';
+import styled from 'styled-components';
 
 const TMDB_API_KEY = 'da914409e3ab4f883504dc0dbf9d9917';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
