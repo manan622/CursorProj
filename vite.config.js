@@ -13,7 +13,7 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
-  base: '/CursorProj/',
+  base: '/',
   resolve: {
     alias: {
       'styled-components': path.resolve(__dirname, 'node_modules/styled-components'),
