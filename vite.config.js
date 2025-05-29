@@ -8,11 +8,22 @@ export default defineConfig({
     react(),
     visualizer({ open: true })
   ],
+  resolve: {
+    alias: {
+      'styled-components': 'styled-components',
+    },
+  },
   build: {
     chunkSizeWarningLimit: 600,
     outDir: 'build',
+    sourcemap: true,
     rollupOptions: {
       external: ['styled-components'],
+      output: {
+        manualChunks: {
+          'styled-components': ['styled-components'],
+        },
+      },
     },
   },
   server: {
