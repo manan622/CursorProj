@@ -75,23 +75,15 @@ export const searchContent = async (query) => {
       tvResults.json()
     ]);
 
-    // Format and combine results
-    const formattedMovieResults = movieData.results.map(movie => ({
-      ...movie,
-      mediaType: 'movie',
-      title: movie.title,
-      release_date: movie.release_date
-    }));
-
-    const formattedTvResults = tvData.results.map(show => ({
-      ...show,
-      mediaType: 'tv',
-      title: show.name,
-      release_date: show.first_air_date
-    }));
-
-    const combinedResults = [...formattedMovieResults, ...formattedTvResults]
-      .sort((a, b) => b.popularity - a.popularity);
+    const combinedResults = [
+      ...movieData.results.map(movie => ({ ...movie, mediaType: 'movie' })),
+      ...tvData.results.map(show => ({
+        ...show,
+        mediaType: 'tv',
+        title: show.name,
+        release_date: show.first_air_date
+      }))
+    ].sort((a, b) => b.popularity - a.popularity);
 
     return combinedResults;
   } catch (error) {

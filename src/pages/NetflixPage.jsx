@@ -159,6 +159,10 @@ function NetflixPage() {
     }
   };
 
+  const handleSearchQueryChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
   const handleClearSearch = () => {
     setSearchQuery('');
     setSearchResults([]);
@@ -247,28 +251,10 @@ function NetflixPage() {
     try {
       setIsSearching(true);
       const results = await searchContent(query);
-      
-      // Ensure results is an array and has the expected structure
-      if (Array.isArray(results)) {
-        const formattedResults = results.map(item => ({
-          ...item,
-          title: item.title || item.name,
-          mediaType: item.mediaType || (item.first_air_date ? 'tv' : 'movie'),
-          release_date: item.release_date || item.first_air_date,
-          poster_path: item.poster_path,
-          backdrop_path: item.backdrop_path,
-          overview: item.overview,
-          vote_average: item.vote_average,
-          genre_ids: item.genre_ids || []
-        }));
-        setSearchResults(formattedResults);
-      } else {
-        console.error('Search results is not an array:', results);
-        setSearchResults([]);
-      }
+      setSearchResults(results);
     } catch (error) {
       console.error('Error searching content:', error);
-      setSearchResults([]);
+      setError(error.message);
     } finally {
       setIsSearching(false);
     }
@@ -279,15 +265,13 @@ function NetflixPage() {
     fetchMovies();
   }, [fetchMovies]);
 
-  // Add useEffect to handle search query changes
+  // Debounce search
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (searchQuery) {
-        handleSearch(searchQuery);
-      }
+    const debounceTimer = setTimeout(() => {
+      handleSearch(searchQuery);
     }, 500);
 
-    return () => clearTimeout(delayDebounceFn);
+    return () => clearTimeout(debounceTimer);
   }, [searchQuery, handleSearch]);
 
   // Fetch TV show details when selected movie changes
@@ -379,7 +363,7 @@ function NetflixPage() {
       {/* Header */}
       <Header
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        setSearchQuery={handleSearchQueryChange}
         handleClearSearch={handleClearSearch}
         handleRefresh={fetchMovies}
         handleApiPopupOpen={handleApiPopupOpen}

@@ -34,7 +34,7 @@ const SearchResults = ({
   // Optimize rendering by chunking large result sets
   const renderOptimizedResults = () => {
     // If we have a small set, render all
-    if (searchResults.length <= 50) {
+    if (searchResults.length <= 20) {
       return searchResults.map((movie, index) => (
         <MovieCard
           key={`search-${movie.id}-${index}`}
@@ -52,8 +52,9 @@ const SearchResults = ({
       ));
     }
 
-    // For larger sets, render in chunks of 50
-    return searchResults.slice(0, 50).map((movie, index) => (
+    // For larger sets, we could implement windowing/virtualization
+    // This is a simplified version that just renders first 20 items
+    return searchResults.slice(0, 20).map((movie, index) => (
       <MovieCard
         key={`search-${movie.id}-${index}`}
         movie={movie}
