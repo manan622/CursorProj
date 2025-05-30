@@ -247,10 +247,28 @@ function NetflixPage() {
     try {
       setIsSearching(true);
       const results = await searchContent(query);
-      setSearchResults(results);
+      
+      // Ensure results is an array and has the expected structure
+      if (Array.isArray(results)) {
+        const formattedResults = results.map(item => ({
+          ...item,
+          title: item.title || item.name,
+          mediaType: item.mediaType || (item.first_air_date ? 'tv' : 'movie'),
+          release_date: item.release_date || item.first_air_date,
+          poster_path: item.poster_path,
+          backdrop_path: item.backdrop_path,
+          overview: item.overview,
+          vote_average: item.vote_average,
+          genre_ids: item.genre_ids || []
+        }));
+        setSearchResults(formattedResults);
+      } else {
+        console.error('Search results is not an array:', results);
+        setSearchResults([]);
+      }
     } catch (error) {
       console.error('Error searching content:', error);
-      setError(error.message);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -261,13 +279,15 @@ function NetflixPage() {
     fetchMovies();
   }, [fetchMovies]);
 
-  // Debounce search
+  // Add useEffect to handle search query changes
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
-      handleSearch(searchQuery);
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery) {
+        handleSearch(searchQuery);
+      }
     }, 500);
 
-    return () => clearTimeout(debounceTimer);
+    return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, handleSearch]);
 
   // Fetch TV show details when selected movie changes

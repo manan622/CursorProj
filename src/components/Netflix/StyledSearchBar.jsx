@@ -69,13 +69,29 @@ const FilterButton = styled(IconButton)(({ isAndroid }) => ({
 }));
 
 const StyledSearchBar = ({ value, onChange, onClear, onFilterClick, isAndroid }) => {
+  const handleChange = (event) => {
+    if (onChange) {
+      onChange(event.target.value);
+    }
+  };
+
+  const handleClear = () => {
+    if (onClear) {
+      onClear();
+    }
+  };
+
   return (
     <SearchContainer>
       <SearchInput
         placeholder="Search movies and TV shows..."
-        value={value}
-        onChange={onChange}
+        value={value || ''}
+        onChange={handleChange}
         isAndroid={isAndroid}
+        inputProps={{
+          'aria-label': 'search',
+          'data-testid': 'search-input'
+        }}
       />
       <SearchIcon isAndroid={isAndroid}>
         <svg width={isAndroid ? "24" : "20"} height={isAndroid ? "24" : "20"} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -94,7 +110,7 @@ const StyledSearchBar = ({ value, onChange, onClear, onFilterClick, isAndroid })
         </svg>
       </SearchIcon>
       {value && (
-        <ClearButton onClick={onClear} isAndroid={isAndroid}>
+        <ClearButton onClick={handleClear} isAndroid={isAndroid} aria-label="clear search">
           <svg width={isAndroid ? "24" : "20"} height={isAndroid ? "24" : "20"} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M15 5L5 15" stroke="url(#paint0_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M5 5L15 15" stroke="url(#paint1_linear)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -112,7 +128,7 @@ const StyledSearchBar = ({ value, onChange, onClear, onFilterClick, isAndroid })
         </ClearButton>
       )}
       {!isAndroid && (
-        <FilterButton onClick={onFilterClick} isAndroid={isAndroid}>
+        <FilterButton onClick={onFilterClick} isAndroid={isAndroid} aria-label="filter results">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M8.33333 15H11.6667V12.5H8.33333V15ZM2.5 5V7.5H17.5V5H2.5ZM5 10.8333H15V8.33333H5V10.8333Z" fill="url(#paint0_linear)"/>
             <defs>

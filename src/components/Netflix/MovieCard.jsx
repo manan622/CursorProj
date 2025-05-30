@@ -37,7 +37,7 @@ const MovieCard = ({
   };
 
   const handleClick = () => {
-    // Format the movie data before navigation
+    // Format the movie data before showing details
     const formattedMovie = {
       ...movie,
       id: movie.id,
@@ -54,8 +54,9 @@ const MovieCard = ({
       totalEpisodes: movie.number_of_episodes || 1
     };
 
-    // Navigate to the movie details page with the formatted data
-    navigate(`/movie/${movie.id}`, { state: { movie: formattedMovie } });
+    // Show movie details instead of navigating
+    setSelectedMovie(formattedMovie);
+    setIsDetailsOpen(true);
   };
 
   // Helper function to get genre name from ID
