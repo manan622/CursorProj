@@ -206,7 +206,15 @@ function NetflixPage() {
       setSelectedMovie(movie);
       setIsDetailsOpen(true);
     }
-  }, [apiSource, getVideoUrl]);
+  }, [apiSource]);
+
+  // Add effect to update video URL when API source changes
+  useEffect(() => {
+    if (selectedMovie && isPlayerOpen) {
+      const newUrl = getVideoUrl(selectedMovie, apiSource);
+      setCurrentVideoUrl(newUrl);
+    }
+  }, [apiSource, selectedMovie, isPlayerOpen]);
 
   const handleApiPopupOpen = () => {
     setIsApiPopupOpen(true);
@@ -214,6 +222,14 @@ function NetflixPage() {
 
   const handleApiPopupClose = () => {
     setIsApiPopupOpen(false);
+  };
+
+  const handleApiChange = (newApi) => {
+    setApiSource(newApi);
+    if (selectedMovie && isPlayerOpen) {
+      const newUrl = getVideoUrl(selectedMovie, newApi);
+      setCurrentVideoUrl(newUrl);
+    }
   };
 
   // Data fetching
@@ -523,9 +539,7 @@ function NetflixPage() {
         open={isApiPopupOpen}
         onClose={handleApiPopupClose}
         currentApi={apiSource}
-        onApiChange={(newApi) => {
-          setApiSource(newApi);
-        }}
+        onApiChange={handleApiChange}
         apiSources={apiSources}
       />
 
