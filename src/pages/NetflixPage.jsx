@@ -65,6 +65,8 @@ export const apiSources = [
   { id: 'Hotstar', name: 'Hotstar API', url: 'https://embed.su/embed' },
   { id: 'multiembed', name: 'MultiEmbed API', url: 'https://multiembed.mov' },
   { id: '2embed', name: '2Embed API', url: 'https://2embed.cc/embed' },
+  { id: 'videasy', name: 'Videasy API', url: 'https://player.videasy.net' },
+  { id: 'vidfast', name: 'Vidfast API', url: 'https://vidfast.pro' },
 ];
 
 export const getVideoUrl = (movie, apiSourceId) => {
@@ -81,6 +83,10 @@ export const getVideoUrl = (movie, apiSourceId) => {
         url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}`;
       } else if (apiSourceId === '2embed') {
         url = `${selectedApi.url}tv/${movie.id}&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}`;
+      } else if (apiSourceId === 'videasy') {
+        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&color=8B5CF6`;
+      } else if (apiSourceId === 'vidfast') {
+        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?nextButton=true&autoNext=true&autoPlay=true`;
       } else {
         url = `${selectedApi.url}/tv/${movie.id}-${movie.currentSeason}-${movie.absoluteEpisodeNumber}`;
       }
@@ -95,6 +101,10 @@ export const getVideoUrl = (movie, apiSourceId) => {
         url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${season}&e=${episode}`;
       } else if (apiSourceId === '2embed') {
         url = `${selectedApi.url}tv/${movie.id}&s=${season}&e=${episode}`;
+      } else if (apiSourceId === 'videasy') {
+        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&color=8B5CF6`;
+      } else if (apiSourceId === 'vidfast') {
+        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}?nextButton=true&autoNext=true&autoPlay=true`;
       } else {
         url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}`;
       }
@@ -104,6 +114,10 @@ export const getVideoUrl = (movie, apiSourceId) => {
     url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1`;
   } else if (apiSourceId === '2embed') {
     url = `${selectedApi.url}/${movie.id}`;
+  } else if (apiSourceId === 'videasy') {
+    url = `${selectedApi.url}/movie/${movie.id}?color=8B5CF6`;
+  } else if (apiSourceId === 'vidfast') {
+    url = `${selectedApi.url}/movie/${movie.id}?autoPlay=true`;
   } else {
     // For movies, just use the movie ID
     url = `${selectedApi.url}/movie/${movie.id}`;
