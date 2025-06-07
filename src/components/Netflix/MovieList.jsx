@@ -55,22 +55,46 @@ const MovieList = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <Typography
-          variant="h5"
-          sx={{
-            color: 'white',
-            fontWeight: 600,
-            mb: 0,
-            px: { xs: 2, sm: 3 },
-            fontSize: isAndroid ? '1.2rem' : '1.5rem',
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}
-        >
-          {title}
-        </Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          px: { xs: 2, sm: 3 },
+          mb: 1
+        }}>
+          <Typography
+            variant="h5"
+            sx={{
+              color: 'white',
+              fontWeight: 600,
+              fontSize: isAndroid ? '1.2rem' : '1.5rem',
+              textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}
+          >
+            {title}
+          </Typography>
+
+          <Button
+            onClick={handleLoadMore}
+            sx={{
+              color: 'rgba(255, 255, 255, 0.8)',
+              textTransform: 'none',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              transition: 'all 0.2s',
+              '&:hover': {
+                color: 'white',
+                transform: 'scale(1.05)',
+                bgcolor: 'transparent'
+              }
+            }}
+          >
+            Load More
+          </Button>
+        </Box>
       </motion.div>
 
       <Box sx={{ position: 'relative' }}>
@@ -116,7 +140,7 @@ const MovieList = ({
             position: 'relative',
             '&::after': {
               content: '""',
-              position: 'absolute',
+              position: 'fixed',
               right: 0,
               top: 0,
               bottom: 0,
@@ -200,34 +224,6 @@ const MovieList = ({
         >
           <ChevronRightIcon sx={{ fontSize: isAndroid ? 20 : 24 }} />
         </IconButton>
-
-        {/* Load More Button */}
-        <Button
-          onClick={handleLoadMore}
-          sx={{
-            position: 'absolute',
-            right: isAndroid ? 4 : 8,
-            bottom: 0,
-            bgcolor: 'rgba(229, 9, 20, 0.9)',
-            color: 'white',
-            '&:hover': {
-              bgcolor: 'rgba(229, 9, 20, 1)',
-            },
-            display: { xs: 'none', sm: 'flex' },
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-            borderRadius: '20px',
-            px: 2,
-            py: 1,
-            fontSize: '0.9rem',
-            fontWeight: 'bold',
-            textTransform: 'none',
-            zIndex: 2
-          }}
-        >
-          Load More
-        </Button>
       </Box>
     </Box>
   );
