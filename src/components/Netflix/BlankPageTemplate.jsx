@@ -994,6 +994,7 @@ const BlankPageTemplate = () => {
         onPlayEpisode={handlePlayEpisode}
         currentSeason={currentSeason}
         currentEpisode={currentEpisode}
+        seasonDetails={seasonDetails}
       />
 
       {/* API Source Popup */}

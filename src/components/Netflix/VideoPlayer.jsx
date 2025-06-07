@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { Dialog, DialogContent, IconButton, Button, Box, CircularProgress, Typography, TextField, Tooltip } from '@mui/material';
+import { Dialog, DialogContent, IconButton, Button, Box, CircularProgress, Typography, TextField, Tooltip, Switch, FormControlLabel } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SkipNextIcon from '@mui/icons-material/SkipNext';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { alpha } from '@mui/material/styles';
 
-const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, showNextButton = false, onPlayEpisode, currentSeason, currentEpisode }) => {
+const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, showNextButton = false, onPlayEpisode, currentSeason, currentEpisode, seasonDetails = [] }) => {
   const [videoKey, setVideoKey] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [episodeInput, setEpisodeInput] = useState('');
   const [seasonInput, setSeasonInput] = useState('');
+  const [useAbsoluteNumbering, setUseAbsoluteNumbering] = useState(false);
+  const [displayAbsoluteNumber, setDisplayAbsoluteNumber] = useState('#');
   const iframeRef = useRef(null);
   
   // Memoize iframe attributes to prevent unnecessary re-renders
@@ -122,7 +124,69 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
       return '';
     }
   }, [videoUrl]);
-  
+
+  // Calculate absolute episode number based on current season and episode
+  const absoluteEpisodeNumber = useMemo(() => {
+    if (!currentSeason || !currentEpisode || !seasonDetails.length) return '#';
+    
+    let absoluteNumber = 0;
+    for (let s = 0; s < currentSeason - 1; s++) {
+      absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+    }
+    return absoluteNumber + parseInt(currentEpisode);
+  }, [currentSeason, currentEpisode, seasonDetails]);
+
+  // Update display absolute number when inputs change
+  useEffect(() => {
+    if (useAbsoluteNumbering && episodeInput) {
+      setDisplayAbsoluteNumber(episodeInput);
+    } else if (!useAbsoluteNumbering && seasonInput && episodeInput) {
+      let absoluteNumber = 0;
+      for (let s = 0; s < parseInt(seasonInput) - 1; s++) {
+        absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+      }
+      absoluteNumber += parseInt(episodeInput);
+      setDisplayAbsoluteNumber(absoluteNumber.toString());
+    } else {
+      setDisplayAbsoluteNumber(absoluteEpisodeNumber);
+    }
+  }, [useAbsoluteNumbering, seasonInput, episodeInput, absoluteEpisodeNumber, seasonDetails]);
+
+  // Store absolute numbering mode in localStorage
+  useEffect(() => {
+    const storedMode = localStorage.getItem('useAbsoluteNumbering');
+    if (storedMode !== null) {
+      setUseAbsoluteNumbering(storedMode === 'true');
+    }
+  }, []);
+
+  // Save absolute numbering mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('useAbsoluteNumbering', useAbsoluteNumbering);
+  }, [useAbsoluteNumbering]);
+
+  // Handle episode play
+  const handlePlayEpisode = () => {
+    if (!onPlayEpisode || !episodeInput) return;
+    
+    if (useAbsoluteNumbering) {
+      // When in absolute mode, pass the absolute episode number directly
+      onPlayEpisode(parseInt(episodeInput), undefined, true); // Added third parameter to indicate absolute mode
+    } else if (seasonInput && episodeInput) {
+      // In regular mode, calculate absolute number but don't use it
+      let absoluteNumber = 0;
+      for (let s = 0; s < parseInt(seasonInput) - 1; s++) {
+        absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+      }
+      absoluteNumber += parseInt(episodeInput);
+      onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput), false);
+    }
+    
+    // Only reset the input fields, not the mode
+    setEpisodeInput('');
+    setSeasonInput('');
+  };
+
   return (
     <Dialog 
       open={open} 
@@ -166,46 +230,90 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
         }}>
           {/* Episode Indicator */}
           {showNextButton && (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minWidth: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                bgcolor: 'rgba(229, 9, 20, 0.2)',
-                color: 'white',
-                fontWeight: 'bold',
-                fontSize: '0.9rem',
-                border: '1px solid rgba(229, 9, 20, 0.3)',
-                backdropFilter: 'blur(20px)',
-                transition: 'all 0.3s ease',
-                cursor: 'default',
-                userSelect: 'none',
-                boxShadow: '0 4px 16px rgba(229, 9, 20, 0.2)',
-                '&:hover': {
-                  transform: 'scale(1.05) translateY(-2px)',
-                  border: '1px solid rgba(229, 9, 20, 0.4)',
-                  boxShadow: '0 8px 24px rgba(229, 9, 20, 0.3)',
-                  bgcolor: 'rgba(229, 9, 20, 0.25)',
-                }
-              }}
-            >
-              <Typography
-                variant="body2"
+            <>
+              <Box
                 sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(229, 9, 20, 0.2)',
+                  color: 'white',
                   fontWeight: 'bold',
-                  textAlign: 'center',
-                  lineHeight: 1,
-                  padding: '4px',
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                  fontSize: '0.9rem',
+                  border: '1px solid rgba(229, 9, 20, 0.3)',
+                  backdropFilter: 'blur(20px)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'default',
+                  userSelect: 'none',
+                  boxShadow: '0 4px 16px rgba(229, 9, 20, 0.2)',
+                  '&:hover': {
+                    transform: 'scale(1.05) translateY(-2px)',
+                    border: '1px solid rgba(229, 9, 20, 0.4)',
+                    boxShadow: '0 8px 24px rgba(229, 9, 20, 0.3)',
+                    bgcolor: 'rgba(229, 9, 20, 0.25)',
+                  }
                 }}
               >
-                {currentSeason ? `S${currentSeason}` : ''}<br />
-                {currentEpisode ? `E${currentEpisode}` : ''}
-              </Typography>
-            </Box>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    lineHeight: 1,
+                    padding: '4px',
+                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                  }}
+                >
+                  {currentSeason ? `S${currentSeason}` : ''}<br />
+                  {currentEpisode ? `E${currentEpisode}` : ''}
+                </Typography>
+              </Box>
+
+              {/* Absolute Episode Number Indicator */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '40px',
+                  height: '40px',
+                  borderRadius: '50%',
+                  bgcolor: 'rgba(229, 9, 20, 0.1)',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  border: '1px solid rgba(229, 9, 20, 0.2)',
+                  backdropFilter: 'blur(20px)',
+                  transition: 'all 0.3s ease',
+                  cursor: 'default',
+                  userSelect: 'none',
+                  boxShadow: '0 4px 16px rgba(229, 9, 20, 0.1)',
+                  '&:hover': {
+                    transform: 'scale(1.05) translateY(-2px)',
+                    border: '1px solid rgba(229, 9, 20, 0.3)',
+                    boxShadow: '0 8px 24px rgba(229, 9, 20, 0.2)',
+                    bgcolor: 'rgba(229, 9, 20, 0.15)',
+                  }
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    lineHeight: 1,
+                    padding: '4px',
+                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                  }}
+                >
+                  ABS<br />
+                  {displayAbsoluteNumber}
+                </Typography>
+              </Box>
+            </>
           )}
 
           {/* Next Episode Button */}
@@ -228,21 +336,46 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
                 boxShadow: '0 12px 36px rgba(0, 0, 0, 0.3)',
               }
             }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    size="small"
+                    checked={useAbsoluteNumbering}
+                    onChange={(e) => setUseAbsoluteNumbering(e.target.checked)}
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#E50914',
+                        '& + .MuiSwitch-track': {
+                          bgcolor: '#E50914'
+                        }
+                      }
+                    }}
+                  />
+                }
+                label={
+                  <Typography variant="caption" sx={{ color: 'white' }}>
+                    Absolute
+                  </Typography>
+                }
+                sx={{ mr: 1 }}
+              />
               <TextField
                 size="small"
-                value={seasonInput}
+                value={useAbsoluteNumbering ? episodeInput : seasonInput}
                 onChange={(e) => {
                   const value = e.target.value.replace(/[^0-9]/g, '');
-                  setSeasonInput(value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && onPlayEpisode && seasonInput && episodeInput) {
-                    onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput));
-                    setEpisodeInput('');
-                    setSeasonInput('');
+                  if (useAbsoluteNumbering) {
+                    setEpisodeInput(value);
+                  } else {
+                    setSeasonInput(value);
                   }
                 }}
-                placeholder="S #"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handlePlayEpisode();
+                  }
+                }}
+                placeholder={useAbsoluteNumbering ? "Ep #" : "S #"}
                 sx={{
                   width: '50px',
                   '& .MuiInputBase-input': {
@@ -267,65 +400,60 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
                       borderColor: 'rgba(255, 255, 255, 0.25)'
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: 'rgba(229, 9, 20, 0.6)'
+                      borderColor: '#E50914'
                     }
                   }
                 }}
               />
-              <TextField
-                size="small"
-                value={episodeInput}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  setEpisodeInput(value);
-                }}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && onPlayEpisode) {
-                    onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput) || undefined);
-                    setEpisodeInput('');
-                    setSeasonInput('');
-                  }
-                }}
-                placeholder="Ep #"
-                sx={{
-                  width: '50px',
-                  '& .MuiInputBase-input': {
-                    color: 'white',
-                    padding: '4px 8px',
-                    fontSize: '0.875rem',
-                    height: '20px',
-                    textAlign: 'center',
-                    '&::placeholder': {
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      opacity: 1
-                    }
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(32, 32, 32, 0.4)',
-                    bgcolor: 'rgba(0, 0, 0, 0.2)',
-                    backdropFilter: 'blur(10px)',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                      borderRadius: '8px'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.3)'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: alpha('#E50914', 0.8)
-                    }
-                  }
-                }}
-              />
-              <Tooltip title="Play episode" placement="bottom">
-                <IconButton
-                  onClick={() => {
-                    if (onPlayEpisode && episodeInput) {
-                      onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput) || undefined);
+              {!useAbsoluteNumbering && (
+                <TextField
+                  size="small"
+                  value={episodeInput}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setEpisodeInput(value);
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && onPlayEpisode && seasonInput && episodeInput) {
+                      onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput));
                       setEpisodeInput('');
                       setSeasonInput('');
                     }
                   }}
+                  placeholder="E #"
+                  sx={{
+                    width: '50px',
+                    '& .MuiInputBase-input': {
+                      color: 'white',
+                      padding: '4px 8px',
+                      fontSize: '0.875rem',
+                      height: '20px',
+                      textAlign: 'center',
+                      '&::placeholder': {
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        opacity: 1
+                      }
+                    },
+                    '& .MuiOutlinedInput-root': {
+                      bgcolor: 'rgba(32, 32, 32, 0.4)',
+                      backdropFilter: 'blur(20px)',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.15)',
+                        borderRadius: '8px'
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.25)'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#E50914'
+                      }
+                    }
+                  }}
+                />
+              )}
+              <Tooltip title="Play episode" placement="bottom">
+                <IconButton
+                  onClick={handlePlayEpisode}
                   sx={{
                     color: 'white',
                     bgcolor: 'rgba(255, 255, 255, 0.1)',
