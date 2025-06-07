@@ -89,17 +89,17 @@ export const getVideoUrl = (movie, apiSourceId) => {
     if (movie.absoluteEpisodeNumber && movie.absoluteEpisodeNumber !== null) {
       // Using absolute numbering mode - pass only the absolute number for all API sources
       if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
-        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}`;
+        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?autoPlay=true`;
       } else if (apiSourceId === 'multiembed') {
-        url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}`;
+        url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}&autoPlay=true`;
       } else if (apiSourceId === '2embed') {
-        url = `${selectedApi.url}tv/${movie.id}&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}`;
+        url = `${selectedApi.url}tv/${movie.id}&s=${movie.currentSeason}&e=${movie.absoluteEpisodeNumber}&autoPlay=true`;
       } else if (apiSourceId === 'videasy') {
-        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&color=8B5CF6`;
+        url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&color=8B5CF6&autoPlay=true`;
       } else if (apiSourceId === 'vidfast') {
         url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?nextButton=true&autoNext=true&autoPlay=true`;
       } else {
-        url = `${selectedApi.url}/tv/${movie.id}-${movie.currentSeason}-${movie.absoluteEpisodeNumber}`;
+        url = `${selectedApi.url}/tv/${movie.id}-${movie.currentSeason}-${movie.absoluteEpisodeNumber}?autoPlay=true`;
       }
     } else {
       // Using regular season/episode numbering
@@ -107,31 +107,31 @@ export const getVideoUrl = (movie, apiSourceId) => {
       const episode = movie.currentEpisode;
       
       if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
-        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}`;
+        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}?autoPlay=true`;
       } else if (apiSourceId === 'multiembed') {
-        url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${season}&e=${episode}`;
+        url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&s=${season}&e=${episode}&autoPlay=true`;
       } else if (apiSourceId === '2embed') {
-        url = `${selectedApi.url}tv/${movie.id}&s=${season}&e=${episode}`;
+        url = `${selectedApi.url}tv/${movie.id}&s=${season}&e=${episode}&autoPlay=true`;
       } else if (apiSourceId === 'videasy') {
-        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&color=8B5CF6`;
+        url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}?nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true&color=8B5CF6&autoPlay=true`;
       } else if (apiSourceId === 'vidfast') {
         url = `${selectedApi.url}/tv/${movie.id}/${season}/${episode}?nextButton=true&autoNext=true&autoPlay=true`;
       } else {
-        url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}`;
+        url = `${selectedApi.url}/tv/${movie.id}-${season}-${episode}?autoPlay=true`;
       }
     }
   } 
   else if (apiSourceId === 'multiembed') {
-    url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1`;
+    url = `${selectedApi.url}/directstream.php?video_id=${movie.id}&tmdb=1&autoPlay=true`;
   } else if (apiSourceId === '2embed') {
-    url = `${selectedApi.url}/${movie.id}`;
+    url = `${selectedApi.url}/${movie.id}?autoPlay=true`;
   } else if (apiSourceId === 'videasy') {
-    url = `${selectedApi.url}/movie/${movie.id}?color=8B5CF6`;
+    url = `${selectedApi.url}/movie/${movie.id}?color=8B5CF6&autoPlay=true`;
   } else if (apiSourceId === 'vidfast') {
     url = `${selectedApi.url}/movie/${movie.id}?autoPlay=true`;
   } else {
     // For movies, just use the movie ID
-    url = `${selectedApi.url}/movie/${movie.id}`;
+    url = `${selectedApi.url}/movie/${movie.id}?autoPlay=true`;
   }
   
   return url;
@@ -214,24 +214,136 @@ function NetflixPage() {
       console.log("Playing TV episode with:", {
         absoluteNumbering: movie.absoluteEpisodeNumber ? "yes" : "no",
         absoluteEpisodeNumber: movie.absoluteEpisodeNumber,
-        season: movie.currentSeason,
-        episode: movie.currentEpisode
+        season: movie.currentSeason || 1,
+        episode: movie.currentEpisode || 1
       });
-    }
-    
-    const url = getVideoUrl(movie, apiSource);
-    console.log("Generated video URL:", url);
-    
-    if (url) {
-      setCurrentVideoUrl(url);
-      setSelectedMovie(movie);
-      setIsPlayerOpen(true);
+
+      // Ensure TV show has proper episode information
+      const updatedMovie = {
+        ...movie,
+        currentSeason: movie.currentSeason || 1,
+        currentEpisode: movie.currentEpisode || 1,
+        absoluteEpisodeNumber: movie.absoluteEpisodeNumber || null
+      };
+      
+      const url = getVideoUrl(updatedMovie, apiSource);
+      console.log("Generated video URL:", url);
+      
+      if (url) {
+        setCurrentVideoUrl(url);
+        setSelectedMovie(updatedMovie);
+        setIsPlayerOpen(true);
+      } else {
+        setSelectedMovie(updatedMovie);
+        setIsDetailsOpen(true);
+      }
     } else {
-      // If no video URL is available, show details instead
-      setSelectedMovie(movie);
-      setIsDetailsOpen(true);
+      const url = getVideoUrl(movie, apiSource);
+      console.log("Generated video URL:", url);
+      
+      if (url) {
+        setCurrentVideoUrl(url);
+        setSelectedMovie(movie);
+        setIsPlayerOpen(true);
+      } else {
+        setSelectedMovie(movie);
+        setIsDetailsOpen(true);
+      }
     }
   }, [apiSource]);
+
+  const handleNextEpisode = useCallback(() => {
+    if (!selectedMovie || selectedMovie.mediaType !== 'tv') return;
+    
+    const currentSeason = selectedMovie.currentSeason || 1;
+    const currentEpisode = selectedMovie.currentEpisode || 1;
+    
+    // Get the total episodes in the current season
+    const seasonEpisodes = seasonDetails[currentSeason - 1]?.episodes?.length || 0;
+    
+    let nextSeason = currentSeason;
+    let nextEpisode = currentEpisode + 1;
+    
+    // If we're at the end of the season, move to the next season
+    if (nextEpisode > seasonEpisodes) {
+      nextSeason = currentSeason + 1;
+      nextEpisode = 1;
+      
+      // If we're at the end of the series, wrap back to season 1
+      if (nextSeason > totalSeasons) {
+        nextSeason = 1;
+      }
+    }
+    
+    // Update the selected movie with new episode info
+    const updatedMovie = {
+      ...selectedMovie,
+      currentSeason: nextSeason,
+      currentEpisode: nextEpisode,
+      absoluteEpisodeNumber: null // Reset absolute numbering when using next episode
+    };
+    
+    // Update states
+    setSelectedSeason(nextSeason);
+    setSelectedEpisode(nextEpisode);
+    
+    // Generate new video URL and update player
+    const newUrl = getVideoUrl(updatedMovie, apiSource);
+    setSelectedMovie(updatedMovie);
+    setCurrentVideoUrl(newUrl);
+  }, [selectedMovie, seasonDetails, totalSeasons, apiSource]);
+
+  const handlePlayEpisode = useCallback((episodeNumber, seasonNumber) => {
+    if (!selectedMovie || selectedMovie.mediaType !== 'tv' || !episodeNumber) return;
+    
+    let targetSeason = seasonNumber;
+    let targetEpisode = episodeNumber;
+    
+    // If no season is provided, use absolute episode numbering
+    if (seasonNumber === undefined) {
+      let episodesCount = 0;
+      
+      // Find the correct season and episode
+      for (let i = 0; i < seasonDetails.length; i++) {
+        const seasonEpisodes = seasonDetails[i]?.episodes?.length || 0;
+        if (episodesCount + seasonEpisodes >= episodeNumber) {
+          targetSeason = i + 1;
+          targetEpisode = episodeNumber - episodesCount;
+          break;
+        }
+        episodesCount += seasonEpisodes;
+      }
+    } else {
+      // Validate season number
+      if (targetSeason > totalSeasons) {
+        targetSeason = 1;
+        targetEpisode = 1;
+      }
+      
+      // Validate episode number for the selected season
+      const maxEpisodes = seasonDetails[targetSeason - 1]?.episodes?.length || 0;
+      if (targetEpisode > maxEpisodes) {
+        targetEpisode = 1;
+      }
+    }
+    
+    // Update the selected movie with new episode info
+    const updatedMovie = {
+      ...selectedMovie,
+      currentSeason: targetSeason,
+      currentEpisode: targetEpisode,
+      absoluteEpisodeNumber: seasonNumber === undefined ? episodeNumber : null // Only set absolute number if season wasn't provided
+    };
+    
+    // Update states
+    setSelectedSeason(targetSeason);
+    setSelectedEpisode(targetEpisode);
+    
+    // Generate new video URL and update player
+    const newUrl = getVideoUrl(updatedMovie, apiSource);
+    setSelectedMovie(updatedMovie);
+    setCurrentVideoUrl(newUrl);
+  }, [selectedMovie, seasonDetails, totalSeasons, apiSource]);
 
   // Add effect to update video URL when API source changes
   useEffect(() => {
@@ -629,6 +741,9 @@ function NetflixPage() {
         onClose={() => setIsPlayerOpen(false)}
         videoUrl={currentVideoUrl}
         onApiPopupOpen={handleApiPopupOpen}
+        onNextEpisode={handleNextEpisode}
+        showNextButton={selectedMovie?.mediaType === 'tv'}
+        onPlayEpisode={handlePlayEpisode}
       />
     </Box>
   );

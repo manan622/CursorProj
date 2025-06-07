@@ -274,6 +274,43 @@ const BlankPageTemplate = () => {
     setIsPlayerOpen(true);
   };
 
+  const handleNextEpisode = () => {
+    if (!movieData || movieData.mediaType !== 'tv') return;
+    
+    const currentSeasonData = seasonDetails[currentSeason - 1];
+    const seasonEpisodes = currentSeasonData?.episodes?.length || 0;
+    
+    let nextSeason = parseInt(currentSeason);
+    let nextEpisode = parseInt(currentEpisode) + 1;
+    
+    // If we're at the end of the season, move to the next season
+    if (nextEpisode > seasonEpisodes) {
+      nextSeason = nextSeason + 1;
+      nextEpisode = 1;
+      
+      // If we're at the end of the series, wrap back to season 1
+      if (nextSeason > totalSeasons) {
+        nextSeason = 1;
+      }
+    }
+    
+    // Update the movie data with new episode info
+    const updatedMovie = {
+      ...movieData,
+      currentSeason: nextSeason,
+      currentEpisode: nextEpisode,
+      absoluteEpisodeNumber: null // Reset absolute numbering when using next episode
+    };
+    
+    // Update states
+    setCurrentSeason(nextSeason);
+    setCurrentEpisode(nextEpisode);
+    
+    // Generate new video URL and update player
+    const newUrl = getVideoUrl(updatedMovie, apiSource);
+    setCurrentVideoUrl(newUrl);
+  };
+
   const handleBack = () => {
     navigate(-1);
   };
@@ -331,6 +368,57 @@ const BlankPageTemplate = () => {
       fetchShowDetails(movieData.id);
     }
   }, [movieData]);
+
+  const handlePlayEpisode = (episodeNumber, seasonNumber) => {
+    if (!movieData || movieData.mediaType !== 'tv' || !episodeNumber) return;
+    
+    let targetSeason = seasonNumber;
+    let targetEpisode = episodeNumber;
+    
+    // If no season is provided, use absolute episode numbering
+    if (seasonNumber === undefined) {
+      let episodesCount = 0;
+      
+      // Find the correct season and episode
+      for (let i = 0; i < seasonDetails.length; i++) {
+        const seasonEpisodes = seasonDetails[i]?.episodes?.length || 0;
+        if (episodesCount + seasonEpisodes >= episodeNumber) {
+          targetSeason = i + 1;
+          targetEpisode = episodeNumber - episodesCount;
+          break;
+        }
+        episodesCount += seasonEpisodes;
+      }
+    } else {
+      // Validate season number
+      if (targetSeason > totalSeasons) {
+        targetSeason = 1;
+        targetEpisode = 1;
+      }
+      
+      // Validate episode number for the selected season
+      const maxEpisodes = seasonDetails[targetSeason - 1]?.episodes?.length || 0;
+      if (targetEpisode > maxEpisodes) {
+        targetEpisode = 1;
+      }
+    }
+    
+    // Update the movie data with new episode info
+    const updatedMovie = {
+      ...movieData,
+      currentSeason: targetSeason,
+      currentEpisode: targetEpisode,
+      absoluteEpisodeNumber: seasonNumber === undefined ? episodeNumber : null
+    };
+    
+    // Update states
+    setCurrentSeason(targetSeason);
+    setCurrentEpisode(targetEpisode);
+    
+    // Generate new video URL and update player
+    const newUrl = getVideoUrl(updatedMovie, apiSource);
+    setCurrentVideoUrl(newUrl);
+  };
 
   if (error) {
     return (
@@ -772,6 +860,9 @@ const BlankPageTemplate = () => {
         onClose={() => setIsPlayerOpen(false)}
         videoUrl={currentVideoUrl}
         onApiPopupOpen={handleApiPopupOpen}
+        onNextEpisode={handleNextEpisode}
+        showNextButton={movieData?.mediaType === 'tv'}
+        onPlayEpisode={handlePlayEpisode}
       />
 
       {/* API Source Popup */}
