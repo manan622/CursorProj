@@ -54,7 +54,18 @@ const movieCategories = [
 const tvShowCategories = [
   { title: 'Trending TV Shows', endpoint: '/trending/tv/week' },
   { title: 'Popular TV Shows', endpoint: '/tv/popular' },
-  { title: 'Top Rated TV Shows', endpoint: '/tv/top_rated' }
+  { title: 'Top Rated TV Shows', endpoint: '/tv/top_rated' },
+  { 
+    title: 'Trending Anime', 
+    endpoint: '/discover/tv',
+    params: {
+      with_genres: '16', // Animation genre
+      with_origin_country: 'JP', // Japanese content
+      sort_by: 'popularity.desc',
+      first_air_date_year: new Date().getFullYear(), // Current year
+      with_status: '0' // Returning series
+    }
+  }
 ];
 
 export const apiSources = [
@@ -330,6 +341,59 @@ function NetflixPage() {
     // You can load other user data here as needed
   }, []);
 
+  const fetchMoreMovies = async (categoryId, page, mediaType = 'movie') => {
+    try {
+      const category = mediaType === 'movie' 
+        ? movieCategories.find(cat => cat.title === categoryId)
+        : tvShowCategories.find(cat => cat.title === categoryId);
+
+      if (!category) return;
+
+      const params = new URLSearchParams({
+        api_key: TMDB_API_KEY,
+        language: 'en-US',
+        page: page.toString(),
+        ...category.params
+      });
+
+      const response = await fetch(
+        `${TMDB_BASE_URL}${category.endpoint}?${params.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch more ${mediaType}s: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const newMovies = data.results.map(item => ({
+        ...item,
+        mediaType: mediaType,
+        title: mediaType === 'tv' ? item.name : item.title,
+        release_date: mediaType === 'tv' ? item.first_air_date : item.release_date
+      }));
+
+      if (mediaType === 'movie') {
+        setCategories(prevCategories => 
+          prevCategories.map(cat => 
+            cat.title === categoryId
+              ? { ...cat, movies: [...cat.movies, ...newMovies] }
+              : cat
+          )
+        );
+      } else {
+        setTvCategories(prevCategories => 
+          prevCategories.map(cat => 
+            cat.title === categoryId
+              ? { ...cat, movies: [...cat.movies, ...newMovies] }
+              : cat
+          )
+        );
+      }
+    } catch (error) {
+      console.error(`Error fetching more ${mediaType}s:`, error);
+    }
+  };
+
   // Loading and error states
   if (loading) {
     return (
@@ -476,6 +540,7 @@ function NetflixPage() {
                     formatDuration={formatDuration}
                     setSelectedMovie={setSelectedMovie}
                     setIsDetailsOpen={setIsDetailsOpen}
+                    onLoadMore={(page) => fetchMoreMovies(category.title, page, 'movie')}
                   />
                 </Grid>
               ))}
@@ -496,6 +561,7 @@ function NetflixPage() {
                     formatDuration={formatDuration}
                     setSelectedMovie={setSelectedMovie}
                     setIsDetailsOpen={setIsDetailsOpen}
+                    onLoadMore={(page) => fetchMoreMovies(category.title, page, 'tv')}
                   />
                 </Grid>
               ))}

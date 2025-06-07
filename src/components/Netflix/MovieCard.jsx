@@ -94,8 +94,8 @@ const MovieCard = ({
       <Card
         sx={{
           margin: '10px',
-          width: '100%',
-          height: '90%',
+          width: '228px',
+          height: '99%',
           bgcolor: 'transparent',
           cursor: 'pointer',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -160,6 +160,7 @@ const MovieCard = ({
               objectFit: 'cover',
               visibility: imageLoaded ? 'visible' : 'hidden',
               transition: 'transform 0.3s ease-in-out',
+              aspectRatio: '2/3'
             }}
           />
           {hoveredMovie === uniqueId && (

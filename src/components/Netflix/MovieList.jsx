@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Typography, IconButton, Grid, Card, CardMedia, useMediaQuery, useTheme } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, IconButton, Grid, Card, CardMedia, useMediaQuery, useTheme, Button } from '@mui/material';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import MovieCard from './MovieCard';
@@ -20,11 +20,13 @@ const MovieList = ({
   formatDuration,
   setSelectedMovie,
   setIsDetailsOpen,
-  contentFilter = () => true
+  contentFilter = () => true,
+  onLoadMore
 }) => {
   const theme = useTheme();
   const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
   const filteredMovies = movies.filter(contentFilter);
+  const [currentPage, setCurrentPage] = useState(1);
 
   if (filteredMovies.length === 0) {
     return null;
@@ -35,6 +37,14 @@ const MovieList = ({
     if (container) {
       const scrollAmount = direction === 'left' ? -800 : 800;
       container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleLoadMore = () => {
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    if (onLoadMore) {
+      onLoadMore(nextPage);
     }
   };
 
@@ -96,7 +106,6 @@ const MovieList = ({
             display: 'flex',
             overflowX: 'auto',
             scrollBehavior: 'smooth',
-            gap: { xs: 1, sm: 1.5, md: 2 },
             px: { xs: 2, sm: 3 },
             py: 1,
             '&::-webkit-scrollbar': {
@@ -124,10 +133,10 @@ const MovieList = ({
         >
           <Grid 
             container 
-            spacing={{ xs: 1, sm: 1.5, md: 1.5 }} 
             sx={{ 
-              flexWrap: 'nowrap', 
-              width: 'auto',
+              display: 'flex',
+              flexWrap: 'nowrap',
+              gap: { xs: 1, sm: 0, md: 0 },
               '& > *': {
                 transition: 'transform 0.3s ease-in-out',
                 '&:hover': {
@@ -138,19 +147,30 @@ const MovieList = ({
             }}
           >
             {filteredMovies.map((movie, index) => (
-              <MovieCard
-                key={`${categoryId}-${movie.id}-${index}`}
-                movie={movie}
-                hoveredMovie={hoveredMovie}
-                setHoveredMovie={setHoveredMovie}
-                handlePlay={handlePlay}
-                toggleMyList={toggleMyList}
-                isInMyList={isInMyList}
-                formatDuration={formatDuration}
-                setSelectedMovie={setSelectedMovie}
-                setIsDetailsOpen={setIsDetailsOpen}
-                uniqueId={`${categoryId}-${movie.id}-${index}`}
-              />
+              <Grid 
+                item 
+                key={`${categoryId}-${movie.id}-${index}`} 
+                sx={{ 
+                  flex: '0 0 auto',
+                  width: { xs: '160px', sm: '200px', md: '240px' },
+                  maxWidth: { xs: '160px', sm: '200px', md: '240px' },
+                  minWidth: { xs: '160px', sm: '200px', md: '240px' },
+                  p: 0
+                }}
+              >
+                <MovieCard
+                  movie={movie}
+                  hoveredMovie={hoveredMovie}
+                  setHoveredMovie={setHoveredMovie}
+                  handlePlay={handlePlay}
+                  toggleMyList={toggleMyList}
+                  isInMyList={isInMyList}
+                  formatDuration={formatDuration}
+                  setSelectedMovie={setSelectedMovie}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  uniqueId={`${categoryId}-${movie.id}-${index}`}
+                />
+              </Grid>
             ))}
           </Grid>
         </Box>
@@ -180,6 +200,34 @@ const MovieList = ({
         >
           <ChevronRightIcon sx={{ fontSize: isAndroid ? 20 : 24 }} />
         </IconButton>
+
+        {/* Load More Button */}
+        <Button
+          onClick={handleLoadMore}
+          sx={{
+            position: 'absolute',
+            right: isAndroid ? 4 : 8,
+            bottom: 0,
+            bgcolor: 'rgba(229, 9, 20, 0.9)',
+            color: 'white',
+            '&:hover': {
+              bgcolor: 'rgba(229, 9, 20, 1)',
+            },
+            display: { xs: 'none', sm: 'flex' },
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            borderRadius: '20px',
+            px: 2,
+            py: 1,
+            fontSize: '0.9rem',
+            fontWeight: 'bold',
+            textTransform: 'none',
+            zIndex: 2
+          }}
+        >
+          Load More
+        </Button>
       </Box>
     </Box>
   );

@@ -25,7 +25,7 @@ const BlankPageTemplate = () => {
   const [error, setError] = useState(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState('');
-  const [apiSource, setApiSource] = useState('multiembed');
+  const [apiSource, setApiSource] = useState('tmdb');
   const [isApiPopupOpen, setIsApiPopupOpen] = useState(false);
   const [seasonDetails, setSeasonDetails] = useState([]);
   const [totalSeasons, setTotalSeasons] = useState(0);
