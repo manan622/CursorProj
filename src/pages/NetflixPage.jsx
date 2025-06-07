@@ -744,6 +744,8 @@ function NetflixPage() {
         onNextEpisode={handleNextEpisode}
         showNextButton={selectedMovie?.mediaType === 'tv'}
         onPlayEpisode={handlePlayEpisode}
+        currentSeason={selectedMovie?.currentSeason}
+        currentEpisode={selectedMovie?.currentEpisode}
       />
     </Box>
   );

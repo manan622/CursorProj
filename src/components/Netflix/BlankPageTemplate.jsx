@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, Select, MenuItem, FormControlLabel, Switch, Chip } from '@mui/material';
+import { Box, Typography, Button, Select, MenuItem, FormControlLabel, Switch, Chip, IconButton } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HistoryIcon from '@mui/icons-material/History';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import VideoPlayer from './VideoPlayer';
 import ApiSourcePopup from './ApiSourcePopup';
@@ -31,6 +33,7 @@ const BlankPageTemplate = () => {
   const [totalSeasons, setTotalSeasons] = useState(0);
   const [totalEpisodes, setTotalEpisodes] = useState(0);
   const [showDetails, setShowDetails] = useState(null);
+  const [lastPlayedEpisode, setLastPlayedEpisode] = useState(null);
 
   useEffect(() => {
     const fetchMovieData = async () => {
@@ -246,16 +249,28 @@ const BlankPageTemplate = () => {
   const handlePlay = () => {
     if (!movieData) return;
     
-    // Debug: Log whether we're using absolute numbering or not
     if (movieData.mediaType === 'tv') {
-      console.log("Playing TV episode with:", {
-        absoluteNumbering: useAbsoluteNumbering ? "yes" : "no",
+      const episodeInfo = {
         season: currentSeason,
-        episode: currentEpisode
-      });
+        episode: currentEpisode,
+        absoluteNumber: useAbsoluteNumbering ? (() => {
+          let absoluteNumber = 0;
+          for (let s = 0; s < currentSeason - 1; s++) {
+            absoluteNumber += movieData.seasonDetails[s]?.episodes?.length || 0;
+          }
+          return absoluteNumber + parseInt(currentEpisode);
+        })() : null,
+        name: seasonDetails[currentSeason - 1]?.episodes?.find(
+          ep => ep.episode_number === parseInt(currentEpisode)
+        )?.name || `Episode ${currentEpisode}`,
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem(`lastPlayed_${movieData.id}`, JSON.stringify(episodeInfo));
+      setLastPlayedEpisode(episodeInfo);
     }
     
-    const url = getVideoUrl(movieData.mediaType === 'tv' ? {
+    const updatedMovie = {
       ...movieData,
       currentSeason: currentSeason,
       currentEpisode: currentEpisode,
@@ -264,12 +279,11 @@ const BlankPageTemplate = () => {
         for (let s = 0; s < currentSeason - 1; s++) {
           absoluteNumber += movieData.seasonDetails[s]?.episodes?.length || 0;
         }
-        return absoluteNumber + currentEpisode;
+        return absoluteNumber + parseInt(currentEpisode);
       })() : null
-    } : movieData, apiSource);
-    
-    console.log("Generated video URL:", url);
-    
+    };
+
+    const url = getVideoUrl(updatedMovie, apiSource);
     setCurrentVideoUrl(url);
     setIsPlayerOpen(true);
   };
@@ -305,6 +319,20 @@ const BlankPageTemplate = () => {
     // Update states
     setCurrentSeason(nextSeason);
     setCurrentEpisode(nextEpisode);
+    
+    // Save last played episode info
+    const episodeInfo = {
+      season: nextSeason,
+      episode: nextEpisode,
+      absoluteNumber: null,
+      name: seasonDetails[nextSeason - 1]?.episodes?.find(
+        ep => ep.episode_number === nextEpisode
+      )?.name || `Episode ${nextEpisode}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem(`lastPlayed_${movieData.id}`, JSON.stringify(episodeInfo));
+    setLastPlayedEpisode(episodeInfo);
     
     // Generate new video URL and update player
     const newUrl = getVideoUrl(updatedMovie, apiSource);
@@ -369,6 +397,15 @@ const BlankPageTemplate = () => {
     }
   }, [movieData]);
 
+  useEffect(() => {
+    if (movieData?.mediaType === 'tv') {
+      const lastPlayed = localStorage.getItem(`lastPlayed_${movieData.id}`);
+      if (lastPlayed) {
+        setLastPlayedEpisode(JSON.parse(lastPlayed));
+      }
+    }
+  }, [movieData]);
+
   const handlePlayEpisode = (episodeNumber, seasonNumber) => {
     if (!movieData || movieData.mediaType !== 'tv' || !episodeNumber) return;
     
@@ -418,6 +455,19 @@ const BlankPageTemplate = () => {
     // Generate new video URL and update player
     const newUrl = getVideoUrl(updatedMovie, apiSource);
     setCurrentVideoUrl(newUrl);
+
+    const episodeInfo = {
+      season: targetSeason,
+      episode: targetEpisode,
+      absoluteNumber: seasonNumber === undefined ? episodeNumber : null,
+      name: seasonDetails[targetSeason - 1]?.episodes?.find(
+        ep => ep.episode_number === targetEpisode
+      )?.name || `Episode ${targetEpisode}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem(`lastPlayed_${movieData.id}`, JSON.stringify(episodeInfo));
+    setLastPlayedEpisode(episodeInfo);
   };
 
   if (error) {
@@ -720,6 +770,85 @@ const BlankPageTemplate = () => {
           }}>
             <Typography variant="h6" sx={{ mb: 2, color: 'rgba(255, 255, 255, 0.9)' }}>Select Episode</Typography>
 
+            {/* Last Played Episode */}
+            {lastPlayedEpisode && (
+              <>
+                <Box sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 2
+                }}>
+                  <Typography variant="subtitle1" sx={{ color: '#E50914', fontWeight: 'bold' }}>
+                    Last Played Episode
+                  </Typography>
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      localStorage.removeItem(`lastPlayed_${movieData.id}`);
+                      setLastPlayedEpisode(null);
+                    }}
+                    sx={{
+                      color: 'rgba(229, 9, 20, 0.8)',
+                      '&:hover': {
+                        color: '#E50914',
+                        bgcolor: 'rgba(229, 9, 20, 0.1)'
+                      }
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+                <Box sx={{
+                  mb: 3,
+                  p: 2,
+                  bgcolor: 'rgba(229, 9, 20, 0.1)',
+                  borderRadius: 1,
+                  border: '1px solid rgba(229, 9, 20, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 2,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: 'rgba(229, 9, 20, 0.2)',
+                  }
+                }}
+                onClick={() => {
+                  // Update states
+                  setCurrentSeason(lastPlayedEpisode.season);
+                  setCurrentEpisode(lastPlayedEpisode.episode);
+                  setUseAbsoluteNumbering(!!lastPlayedEpisode.absoluteNumber);
+
+                  // Create updated movie data
+                  const updatedMovie = {
+                    ...movieData,
+                    currentSeason: lastPlayedEpisode.season,
+                    currentEpisode: lastPlayedEpisode.episode,
+                    absoluteEpisodeNumber: lastPlayedEpisode.absoluteNumber
+                  };
+
+                  // Generate and set new video URL
+                  const newUrl = getVideoUrl(updatedMovie, apiSource);
+                  setCurrentVideoUrl(newUrl);
+                  setIsPlayerOpen(true);
+                }}
+                >
+                  <HistoryIcon sx={{ color: '#E50914' }} />
+                  <Box>
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+                      S{lastPlayedEpisode.season} E{lastPlayedEpisode.episode}: {lastPlayedEpisode.name}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                      {new Date(lastPlayedEpisode.timestamp).toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <PlayArrowIcon sx={{ color: '#E50914' }} />
+                </Box>
+              </>
+            )}
+
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 3 }}>
               <FormControlLabel
                 control={
@@ -863,6 +992,8 @@ const BlankPageTemplate = () => {
         onNextEpisode={handleNextEpisode}
         showNextButton={movieData?.mediaType === 'tv'}
         onPlayEpisode={handlePlayEpisode}
+        currentSeason={currentSeason}
+        currentEpisode={currentEpisode}
       />
 
       {/* API Source Popup */}
