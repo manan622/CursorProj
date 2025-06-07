@@ -87,15 +87,15 @@ const MovieCard = ({
   return (
     <Grid item xs={isAndroid ? 6 : 6} sm={4} md={3} lg={2.4} sx={{ 
       aspectRatio: '2/3', 
-      minHeight: isAndroid ? '320px' : { xs: '180px', sm: '240px', md: '300px' },
+      minHeight: isAndroid ? '20px' : { xs: '180px', sm: '240px', md: '300px' },
       width: isAndroid ? '100%' : 'auto',
       maxWidth: isAndroid ? '100%' : 'none'
     }}>
       <Card
         sx={{
           margin: '10px',
-          width: '228px',
-          height: '99%',
+          width:isAndroid ?'100%':'228px',
+          height:isAndroid ?'100%' : '99%',
           bgcolor: 'transparent',
           cursor: 'pointer',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
