@@ -162,8 +162,29 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
 
   // Save absolute numbering mode to localStorage when it changes
   useEffect(() => {
-    localStorage.setItem('useAbsoluteNumbering', useAbsoluteNumbering);
+    localStorage.setItem('useAbsoluteNumbering', useAbsoluteNumbering.toString());
   }, [useAbsoluteNumbering]);
+
+  // Load absolute numbering mode and refresh URL when dialog opens
+  useEffect(() => {
+    if (open) {
+      const storedMode = localStorage.getItem('useAbsoluteNumbering');
+      const isAbsoluteMode = storedMode === 'true';
+      setUseAbsoluteNumbering(isAbsoluteMode);
+      
+      // If we have current episode info and the mode is absolute, refresh URL
+      if (currentSeason && currentEpisode && isAbsoluteMode) {
+        let absoluteNumber = 0;
+        for (let s = 0; s < currentSeason - 1; s++) {
+          absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+        }
+        absoluteNumber += parseInt(currentEpisode);
+        
+        // Call onPlayEpisode to refresh URL with absolute numbering
+        onPlayEpisode(absoluteNumber, undefined, true);
+      }
+    }
+  }, [open, currentSeason, currentEpisode, seasonDetails, onPlayEpisode]);
 
   // Handle episode play
   const handlePlayEpisode = () => {
@@ -293,10 +314,19 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
     }
   };
 
+  // Handle dialog close
+  const handleClose = () => {
+    // Reset input fields only
+    setEpisodeInput('');
+    setSeasonInput('');
+    // Call the original onClose handler
+    onClose();
+  };
+
   return (
     <Dialog 
       open={open} 
-      onClose={onClose}
+      onClose={handleClose}
       fullScreen
       PaperProps={{
         sx: {
@@ -629,7 +659,7 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
           {/* Close Button */}
           <Tooltip title="Close player" placement="left">
             <IconButton
-              onClick={onClose}
+              onClick={handleClose}
               sx={{
                 color: 'white',
                 bgcolor: 'rgba(255, 255, 255, 0.1)',
