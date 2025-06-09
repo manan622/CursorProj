@@ -340,362 +340,35 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
       }}
     >
       <Box
-          sx={{ 
-            position: 'relative', 
+        sx={{ 
+          position: 'relative', 
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          bgcolor: 'black'
+          bgcolor: 'black',
+          '@media (max-width: 600px)': {
+            // Adjust height to account for controls on mobile
+            '& iframe': {
+              height: 'calc(100% - 0px) !important'
+            }
+          }
         }}
       >
-        {/* Control Icons Container */}
-        <Box sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          display: 'flex',
-          gap: 1,
-          zIndex: 10,
-          padding: '8px',
-          borderRadius: '16px',
-          backgroundColor: 'rgba(64, 64, 64, 0.3)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.15)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-        }}>
-          {/* Episode Indicator */}
-          {showNextButton && (
-            <>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(229, 9, 20, 0.2)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '0.9rem',
-                  border: '1px solid rgba(229, 9, 20, 0.3)',
-                  backdropFilter: 'blur(20px)',
-                  transition: 'all 0.3s ease',
-                  cursor: 'default',
-                  userSelect: 'none',
-                  boxShadow: '0 4px 16px rgba(229, 9, 20, 0.2)',
-                  '&:hover': {
-                    transform: 'scale(1.05) translateY(-2px)',
-                    border: '1px solid rgba(229, 9, 20, 0.4)',
-                    boxShadow: '0 8px 24px rgba(229, 9, 20, 0.3)',
-                    bgcolor: 'rgba(229, 9, 20, 0.25)',
-                  }
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    lineHeight: 1,
-                    padding: '4px',
-                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
-                  }}
-                >
-                  {currentSeason ? `S${currentSeason}` : ''}<br />
-                  {currentEpisode ? `E${currentEpisode}` : ''}
-                </Typography>
-              </Box>
-
-              {/* Absolute Episode Number Indicator */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  bgcolor: 'rgba(229, 9, 20, 0.1)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: '0.9rem',
-                  border: '1px solid rgba(229, 9, 20, 0.2)',
-                  backdropFilter: 'blur(20px)',
-                  transition: 'all 0.3s ease',
-                  cursor: 'default',
-                  userSelect: 'none',
-                  boxShadow: '0 4px 16px rgba(229, 9, 20, 0.1)',
-                  '&:hover': {
-                    transform: 'scale(1.05) translateY(-2px)',
-                    border: '1px solid rgba(229, 9, 20, 0.3)',
-                    boxShadow: '0 8px 24px rgba(229, 9, 20, 0.2)',
-                    bgcolor: 'rgba(229, 9, 20, 0.15)',
-                  }
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    lineHeight: 1,
-                    padding: '4px',
-                    textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
-                  }}
-                >
-                  ABS<br />
-                  {displayAbsoluteNumber}
-                </Typography>
-              </Box>
-            </>
-          )}
-
-          {/* Next Episode Button */}
-          {showNextButton && onNextEpisode && (
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              bgcolor: 'rgba(64, 64, 64, 0.3)',
-              borderRadius: '12px',
-              padding: '4px 8px',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              transition: 'all 0.3s ease',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                bgcolor: 'rgba(64, 64, 64, 0.4)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 12px 36px rgba(0, 0, 0, 0.3)',
-              }
-            }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    size="small"
-                    checked={useAbsoluteNumbering}
-                    onChange={handleAbsoluteNumberingToggle}
-                    sx={{
-                      '& .MuiSwitch-switchBase.Mui-checked': {
-                        color: '#E50914',
-                        '& + .MuiSwitch-track': {
-                          bgcolor: '#E50914'
-                        }
-                      }
-                    }}
-                  />
-                }
-                label={
-                  <Typography variant="caption" sx={{ color: 'white' }}>
-                    Absolute
-                  </Typography>
-                }
-                sx={{ mr: 1 }}
-              />
-              <TextField
-                size="small"
-                value={useAbsoluteNumbering ? episodeInput : seasonInput}
-                onChange={useAbsoluteNumbering ? handleEpisodeInputChange : handleSeasonInputChange}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handlePlayEpisode();
-                  }
-                }}
-                placeholder={useAbsoluteNumbering ? `1-${totalEpisodes}` : `1-${totalSeasons}`}
-                sx={{
-                  width: '50px',
-                  '& .MuiInputBase-input': {
-                    color: 'white',
-                    padding: '4px 8px',
-                    fontSize: '0.875rem',
-                    height: '20px',
-                    textAlign: 'center',
-                    '&::placeholder': {
-                      color: 'rgba(255, 255, 255, 0.5)',
-                      opacity: 1
-                    }
-                  },
-                  '& .MuiOutlinedInput-root': {
-                    bgcolor: 'rgba(32, 32, 32, 0.4)',
-                    backdropFilter: 'blur(20px)',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.15)',
-                      borderRadius: '8px'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.25)'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#E50914'
-                    }
-                  }
-                }}
-              />
-              {!useAbsoluteNumbering && (
-                <TextField
-                  size="small"
-                  value={episodeInput}
-                  onChange={handleEpisodeInputChange}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handlePlayEpisode();
-                    }
-                  }}
-                  placeholder={seasonInput ? `1-${seasonDetails[parseInt(seasonInput) - 1]?.episodes?.length || '?'}` : "E #"}
-                  sx={{
-                    width: '50px',
-                    '& .MuiInputBase-input': {
-                      color: 'white',
-                      padding: '4px 8px',
-                      fontSize: '0.875rem',
-                      height: '20px',
-                      textAlign: 'center',
-                      '&::placeholder': {
-                        color: 'rgba(255, 255, 255, 0.5)',
-                        opacity: 1
-                      }
-                    },
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: 'rgba(32, 32, 32, 0.4)',
-                      backdropFilter: 'blur(20px)',
-                      '& fieldset': {
-                        borderColor: 'rgba(255, 255, 255, 0.15)',
-                        borderRadius: '8px'
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'rgba(255, 255, 255, 0.25)'
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#E50914'
-                      }
-                    }
-                  }}
-                />
-              )}
-              <Tooltip title="Play episode" placement="bottom">
-                <IconButton
-                  onClick={handlePlayEpisode}
-                  sx={{
-                    color: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.2)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      transform: 'scale(1.1)'
-                    },
-                    '&:active': {
-                      transform: 'scale(0.95)'
-                    },
-                    transition: 'all 0.2s ease',
-                    width: 32,
-                    height: 32,
-                    padding: '4px'
-                  }}
-                >
-                  <PlayArrowIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Next episode" placement="bottom">
-                <IconButton
-                  onClick={handleNextEpisode}
-                  sx={{
-                    color: 'white',
-                    bgcolor: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.2)',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      transform: 'scale(1.1)'
-                    },
-                    '&:active': {
-                      transform: 'scale(0.95)'
-                    },
-                    transition: 'all 0.2s ease',
-                    width: 32,
-                    height: 32,
-                    padding: '4px'
-                  }}
-                >
-                  <SkipNextIcon sx={{ fontSize: 20 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
-          )}
-
-          {/* API Source Button */}
-          <Tooltip title="Change video source" placement="left">
-            <IconButton
-              onClick={onApiPopupOpen}
-              sx={{
-                color: 'white',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transform: 'scale(1.1)',
-                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.3)'
-                },
-                '&:active': {
-                  transform: 'scale(0.95)'
-                },
-                transition: 'all 0.2s ease',
-                width: 40,
-                height: 40,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <SettingsIcon sx={{ fontSize: 22 }} />
-            </IconButton>
-          </Tooltip>
-
-          {/* Close Button */}
-          <Tooltip title="Close player" placement="left">
-            <IconButton
-              onClick={handleClose}
-              sx={{
-                color: 'white',
-                bgcolor: 'rgba(255, 255, 255, 0.1)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                  transform: 'scale(1.1)',
-                  boxShadow: '0 6px 16px rgba(0, 0, 0, 0.3)'
-                },
-                '&:active': {
-                  transform: 'scale(0.95)'
-                },
-                transition: 'all 0.2s ease',
-                width: 40,
-                height: 40,
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <CloseIcon sx={{ fontSize: 22 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-
         {/* Video Container */}
         <Box
           sx={{
             flex: 1,
-                position: 'relative',
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
             alignItems: 'center',
-                      justifyContent: 'center',
+            justifyContent: 'center',
             bgcolor: 'black',
+            '@media (max-width: 600px)': {
+              marginBottom: '180px' // Space for controls
+            },
             '& iframe': {
               width: '100%',
               height: '100%',
@@ -711,7 +384,7 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
               src={videoUrl}
               allowFullScreen
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      style={{
+              style={{
                 width: '100%',
                 height: '100%',
                 border: 'none'
@@ -731,10 +404,10 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
               <Typography variant="h5" sx={{ textAlign: 'center' }}>
                 No video source available
               </Typography>
-                <Button
+              <Button
                 variant="contained"
-                  onClick={onApiPopupOpen}
-                  sx={{
+                onClick={onApiPopupOpen}
+                sx={{
                   bgcolor: '#E50914',
                   '&:hover': {
                     bgcolor: '#F40612'
@@ -742,9 +415,422 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
                 }}
               >
                 Change API Source
-                </Button>
+              </Button>
             </Box>
           )}
+        </Box>
+
+        {/* Control Icons Container */}
+        <Box sx={{
+          position: 'absolute',
+          '@media (max-width: 600px)': {
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+            padding: '20px 16px',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.9) 100%)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 1300,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2.5,
+            height: '180px',
+            justifyContent: 'space-between'
+          },
+          '@media (min-width: 601px)': {
+            position: 'absolute',
+            top: 16,
+            right: 16,
+            display: 'flex',
+            gap: 1,
+            zIndex: 10,
+            padding: '8px',
+            borderRadius: '16px',
+            backgroundColor: 'rgba(64, 64, 64, 0.3)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          }
+        }}>
+          {/* Episode Controls Container */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            '@media (max-width: 600px)': {
+              width: '100%',
+              justifyContent: 'center',
+              marginBottom: '4px'
+            }
+          }}>
+            {/* Episode Indicator */}
+            {showNextButton && (
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                '@media (max-width: 600px)': {
+                  justifyContent: 'center'
+                }
+              }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(229, 9, 20, 0.2)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    border: '1px solid rgba(229, 9, 20, 0.3)',
+                    backdropFilter: 'blur(20px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'default',
+                    userSelect: 'none',
+                    boxShadow: '0 4px 16px rgba(229, 9, 20, 0.2)',
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 'bold',
+                      textAlign: 'center',
+                      lineHeight: 1.2,
+                      padding: '4px',
+                      fontSize: '1rem',
+                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
+                    {currentSeason ? `S${currentSeason}` : ''}<br />
+                    {currentEpisode ? `E${currentEpisode}` : ''}
+                  </Typography>
+                </Box>
+
+                {/* Absolute Episode Number Indicator */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(229, 9, 20, 0.1)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    border: '1px solid rgba(229, 9, 20, 0.2)',
+                    backdropFilter: 'blur(20px)',
+                    transition: 'all 0.3s ease',
+                    cursor: 'default',
+                    userSelect: 'none',
+                    boxShadow: '0 4px 16px rgba(229, 9, 20, 0.1)',
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 'bold',
+                      textAlign: 'center',
+                      lineHeight: 1.2,
+                      padding: '4px',
+                      fontSize: '1rem',
+                      textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
+                    ABS<br />
+                    {displayAbsoluteNumber}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+
+          {/* Navigation Controls Container */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+            '@media (max-width: 600px)': {
+              width: '100%',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 2
+            }
+          }}>
+            {/* Next Episode Button */}
+            {showNextButton && onNextEpisode && (
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                bgcolor: 'rgba(64, 64, 64, 0.3)',
+                borderRadius: '12px',
+                padding: '8px 12px',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+                '@media (max-width: 600px)': {
+                  width: '100%',
+                  maxWidth: '400px',
+                  justifyContent: 'space-between',
+                  backgroundColor: 'rgba(32, 32, 32, 0.8)',
+                },
+                '&:hover': {
+                  bgcolor: 'rgba(64, 64, 64, 0.4)',
+                  border: '1px solid rgba(255, 255, 255, 0.25)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.3)',
+                }
+              }}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      size="small"
+                      checked={useAbsoluteNumbering}
+                      onChange={handleAbsoluteNumberingToggle}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: '#E50914',
+                          '& + .MuiSwitch-track': {
+                            bgcolor: '#E50914'
+                          }
+                        }
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ color: 'white', fontSize: '0.9rem' }}>
+                      Absolute
+                    </Typography>
+                  }
+                  sx={{ mr: 1 }}
+                />
+
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  '@media (max-width: 600px)': {
+                    flex: 1,
+                    justifyContent: 'flex-end'
+                  }
+                }}>
+                  <TextField
+                    size="small"
+                    value={useAbsoluteNumbering ? episodeInput : seasonInput}
+                    onChange={useAbsoluteNumbering ? handleEpisodeInputChange : handleSeasonInputChange}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handlePlayEpisode();
+                      }
+                    }}
+                    placeholder={useAbsoluteNumbering ? `1-${totalEpisodes}` : `1-${totalSeasons}`}
+                    sx={{
+                      width: '60px',
+                      '& .MuiInputBase-input': {
+                        color: 'white',
+                        padding: '8px',
+                        fontSize: '1rem',
+                        height: '24px',
+                        textAlign: 'center',
+                        '&::placeholder': {
+                          color: 'rgba(255, 255, 255, 0.5)',
+                          opacity: 1
+                        }
+                      },
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: 'rgba(32, 32, 32, 0.4)',
+                        backdropFilter: 'blur(20px)',
+                        '& fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.15)',
+                          borderRadius: '8px'
+                        },
+                        '&:hover fieldset': {
+                          borderColor: 'rgba(255, 255, 255, 0.25)'
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#E50914'
+                        }
+                      }
+                    }}
+                  />
+                  {!useAbsoluteNumbering && (
+                    <TextField
+                      size="small"
+                      value={episodeInput}
+                      onChange={handleEpisodeInputChange}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          handlePlayEpisode();
+                        }
+                      }}
+                      placeholder={seasonInput ? `1-${seasonDetails[parseInt(seasonInput) - 1]?.episodes?.length || '?'}` : "E #"}
+                      sx={{
+                        width: '60px',
+                        '& .MuiInputBase-input': {
+                          color: 'white',
+                          padding: '8px',
+                          fontSize: '1rem',
+                          height: '24px',
+                          textAlign: 'center',
+                          '&::placeholder': {
+                            color: 'rgba(255, 255, 255, 0.5)',
+                            opacity: 1
+                          }
+                        },
+                        '& .MuiOutlinedInput-root': {
+                          bgcolor: 'rgba(32, 32, 32, 0.4)',
+                          backdropFilter: 'blur(20px)',
+                          '& fieldset': {
+                            borderColor: 'rgba(255, 255, 255, 0.15)',
+                            borderRadius: '8px'
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'rgba(255, 255, 255, 0.25)'
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#E50914'
+                          }
+                        }
+                      }}
+                    />
+                  )}
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="Play episode" placement="bottom">
+                      <IconButton
+                        onClick={handlePlayEpisode}
+                        sx={{
+                          color: 'white',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          width: '40px',
+                          height: '40px',
+                          '& svg': {
+                            fontSize: '24px'
+                          },
+                          '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 0.2)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            transform: 'scale(1.1)'
+                          },
+                          '&:active': {
+                            transform: 'scale(0.95)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <PlayArrowIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Next episode" placement="bottom">
+                      <IconButton
+                        onClick={handleNextEpisode}
+                        sx={{
+                          color: 'white',
+                          bgcolor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          width: '40px',
+                          height: '40px',
+                          '& svg': {
+                            fontSize: '24px'
+                          },
+                          '&:hover': {
+                            bgcolor: 'rgba(255, 255, 255, 0.2)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            transform: 'scale(1.1)'
+                          },
+                          '&:active': {
+                            transform: 'scale(0.95)'
+                          },
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <SkipNextIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </Box>
+
+          {/* Utility Buttons Container */}
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            '@media (max-width: 600px)': {
+              position: 'absolute',
+              top: 16,
+              right: 16
+            }
+          }}>
+            {/* API Source Button */}
+            <Tooltip title="Change video source" placement="left">
+              <IconButton
+                onClick={onApiPopupOpen}
+                sx={{
+                  color: 'white',
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    transform: 'scale(1.1)',
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.3)'
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  transition: 'all 0.2s ease',
+                  width: 40,
+                  height: 40,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                }}
+              >
+                <SettingsIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
+
+            {/* Close Button */}
+            <Tooltip title="Close player" placement="left">
+              <IconButton
+                onClick={handleClose}
+                sx={{
+                  color: 'white',
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    transform: 'scale(1.1)',
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.3)'
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)'
+                  },
+                  transition: 'all 0.2s ease',
+                  width: 40,
+                  height: 40,
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                }}
+              >
+                <CloseIcon sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
 
         {/* Loading Overlay */}
