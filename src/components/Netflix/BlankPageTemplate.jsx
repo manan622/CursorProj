@@ -21,7 +21,10 @@ const BlankPageTemplate = () => {
   const location = useLocation();
   const [currentSeason, setCurrentSeason] = useState(1);
   const [currentEpisode, setCurrentEpisode] = useState(1);
-  const [useAbsoluteNumbering, setUseAbsoluteNumbering] = useState(false);
+  const [useAbsoluteNumbering, setUseAbsoluteNumbering] = useState(() => {
+    const storedMode = localStorage.getItem('useAbsoluteNumbering');
+    return storedMode === 'true';
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [movieData, setMovieData] = useState(null);
   const [error, setError] = useState(null);
@@ -220,14 +223,30 @@ const BlankPageTemplate = () => {
   };
 
   const handleAbsoluteEpisodeChange = (event) => {
-    const absoluteNumber = event.target.value;
+    const absoluteNumber = parseInt(event.target.value);
     const { season, episode } = getSeasonAndEpisodeFromAbsolute(absoluteNumber);
     setCurrentSeason(season);
     setCurrentEpisode(episode);
   };
 
   const toggleNumberingMode = () => {
-    setUseAbsoluteNumbering(!useAbsoluteNumbering);
+    const newMode = !useAbsoluteNumbering;
+    setUseAbsoluteNumbering(newMode);
+    
+    // Refresh video URL with new numbering mode
+    if (movieData && movieData.mediaType === 'tv') {
+      let absoluteNumber = null;
+      if (newMode) {
+        // Calculate absolute number for current episode
+        for (let s = 0; s < currentSeason - 1; s++) {
+          absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+        }
+        absoluteNumber += parseInt(currentEpisode);
+        handlePlayEpisode(absoluteNumber, undefined, true);
+      } else {
+        handlePlayEpisode(currentEpisode, currentSeason, false);
+      }
+    }
   };
 
   const getSeasonAndEpisodeFromAbsolute = (absoluteNumber) => {
@@ -246,20 +265,34 @@ const BlankPageTemplate = () => {
     return { season: 1, episode: 1 };
   };
 
+  const getAbsoluteNumber = (season, episode) => {
+    if (!movieData?.seasonDetails) return null;
+    
+    let absoluteNumber = 0;
+    for (let s = 0; s < season - 1; s++) {
+      absoluteNumber += movieData.seasonDetails[s]?.episodes?.length || 0;
+    }
+    return absoluteNumber + episode;
+  };
+
   const handlePlay = () => {
     if (!movieData) return;
     
     if (movieData.mediaType === 'tv') {
+      let absoluteNumber = null;
+      if (useAbsoluteNumbering) {
+        // Calculate absolute episode number
+        absoluteNumber = 0;
+        for (let s = 0; s < currentSeason - 1; s++) {
+          absoluteNumber += movieData.seasonDetails[s]?.episodes?.length || 0;
+        }
+        absoluteNumber += parseInt(currentEpisode);
+      }
+
       const episodeInfo = {
         season: currentSeason,
         episode: currentEpisode,
-        absoluteNumber: useAbsoluteNumbering ? (() => {
-          let absoluteNumber = 0;
-          for (let s = 0; s < currentSeason - 1; s++) {
-            absoluteNumber += movieData.seasonDetails[s]?.episodes?.length || 0;
-          }
-          return absoluteNumber + parseInt(currentEpisode);
-        })() : null,
+        absoluteNumber: absoluteNumber,
         name: seasonDetails[currentSeason - 1]?.episodes?.find(
           ep => ep.episode_number === parseInt(currentEpisode)
         )?.name || `Episode ${currentEpisode}`,
@@ -274,13 +307,7 @@ const BlankPageTemplate = () => {
       ...movieData,
       currentSeason: currentSeason,
       currentEpisode: currentEpisode,
-      absoluteEpisodeNumber: useAbsoluteNumbering ? (() => {
-        let absoluteNumber = 0;
-        for (let s = 0; s < currentSeason - 1; s++) {
-          absoluteNumber += movieData.seasonDetails[s]?.episodes?.length || 0;
-        }
-        return absoluteNumber + parseInt(currentEpisode);
-      })() : null
+      absoluteEpisodeNumber: useAbsoluteNumbering ? nextAbsoluteNumber : null
     };
 
     const url = getVideoUrl(updatedMovie, apiSource);
@@ -296,44 +323,76 @@ const BlankPageTemplate = () => {
     
     let nextSeason = parseInt(currentSeason);
     let nextEpisode = parseInt(currentEpisode) + 1;
+    let nextAbsoluteNumber = null;
     
-    // If we're at the end of the season, move to the next season
-    if (nextEpisode > seasonEpisodes) {
-      nextSeason = nextSeason + 1;
-      nextEpisode = 1;
+    if (useAbsoluteNumbering) {
+      // Calculate current absolute number
+      let currentAbsoluteNumber = 0;
+      for (let s = 0; s < currentSeason - 1; s++) {
+        currentAbsoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+      }
+      currentAbsoluteNumber += parseInt(currentEpisode);
       
-      // If we're at the end of the series, wrap back to season 1
-      if (nextSeason > totalSeasons) {
+      // Increment absolute number
+      nextAbsoluteNumber = currentAbsoluteNumber + 1;
+      
+      // Calculate next season and episode from absolute number
+      let episodeCount = 0;
+      for (let s = 0; s < seasonDetails.length; s++) {
+        const seasonEpisodes = seasonDetails[s]?.episodes?.length || 0;
+        if (episodeCount + seasonEpisodes >= nextAbsoluteNumber) {
+          nextSeason = s + 1;
+          nextEpisode = nextAbsoluteNumber - episodeCount;
+          break;
+        }
+        episodeCount += seasonEpisodes;
+      }
+      
+      // If we've reached the end of all episodes, wrap back to episode 1
+      if (nextAbsoluteNumber > getTotalEpisodes()) {
+        nextAbsoluteNumber = 1;
         nextSeason = 1;
+        nextEpisode = 1;
+      }
+    } else {
+      // If we're at the end of the season, move to the next season
+      if (nextEpisode > seasonEpisodes) {
+        nextSeason = nextSeason + 1;
+        nextEpisode = 1;
+        
+        // If we're at the end of the series, wrap back to season 1
+        if (nextSeason > totalSeasons) {
+          nextSeason = 1;
+        }
       }
     }
-    
+
+    // Update states
+    setCurrentSeason(nextSeason);
+    setCurrentEpisode(nextEpisode);
+
     // Update the movie data with new episode info
     const updatedMovie = {
       ...movieData,
       currentSeason: nextSeason,
       currentEpisode: nextEpisode,
-      absoluteEpisodeNumber: null // Reset absolute numbering when using next episode
+      absoluteEpisodeNumber: useAbsoluteNumbering ? nextAbsoluteNumber : null
     };
-    
-    // Update states
-    setCurrentSeason(nextSeason);
-    setCurrentEpisode(nextEpisode);
-    
+
     // Save last played episode info
     const episodeInfo = {
       season: nextSeason,
       episode: nextEpisode,
-      absoluteNumber: null,
+      absoluteNumber: useAbsoluteNumbering ? nextAbsoluteNumber : null,
       name: seasonDetails[nextSeason - 1]?.episodes?.find(
-        ep => ep.episode_number === nextEpisode
+        (ep, index) => index + 1 === nextEpisode
       )?.name || `Episode ${nextEpisode}`,
       timestamp: new Date().toISOString()
     };
     
     localStorage.setItem(`lastPlayed_${movieData.id}`, JSON.stringify(episodeInfo));
     setLastPlayedEpisode(episodeInfo);
-    
+
     // Generate new video URL and update player
     const newUrl = getVideoUrl(updatedMovie, apiSource);
     setCurrentVideoUrl(newUrl);
@@ -345,9 +404,7 @@ const BlankPageTemplate = () => {
 
   // Update currentEpisodeData to use the latest season details
   const currentEpisodeData = movieData?.mediaType === 'tv' 
-    ? seasonDetails[currentSeason - 1]?.episodes?.find(
-        episode => episode.episode_number === parseInt(currentEpisode)
-      )
+    ? seasonDetails[currentSeason - 1]?.episodes?.[currentEpisode - 1]
     : null;
 
   const handleApiPopupOpen = () => {
@@ -406,15 +463,17 @@ const BlankPageTemplate = () => {
     }
   }, [movieData]);
 
-  const handlePlayEpisode = (episodeNumber, seasonNumber) => {
+  const handlePlayEpisode = (episodeNumber, seasonNumber, isAbsolute = false) => {
     if (!movieData || movieData.mediaType !== 'tv' || !episodeNumber) return;
     
     let targetSeason = seasonNumber;
     let targetEpisode = episodeNumber;
+    let absoluteNumber = null;
     
-    // If no season is provided, use absolute episode numbering
-    if (seasonNumber === undefined) {
+    if (isAbsolute || useAbsoluteNumbering) {
+      // If absolute numbering is used, calculate season and episode
       let episodesCount = 0;
+      absoluteNumber = episodeNumber;
       
       // Find the correct season and episode
       for (let i = 0; i < seasonDetails.length; i++) {
@@ -426,18 +485,6 @@ const BlankPageTemplate = () => {
         }
         episodesCount += seasonEpisodes;
       }
-    } else {
-      // Validate season number
-      if (targetSeason > totalSeasons) {
-        targetSeason = 1;
-        targetEpisode = 1;
-      }
-      
-      // Validate episode number for the selected season
-      const maxEpisodes = seasonDetails[targetSeason - 1]?.episodes?.length || 0;
-      if (targetEpisode > maxEpisodes) {
-        targetEpisode = 1;
-      }
     }
     
     // Update the movie data with new episode info
@@ -445,7 +492,7 @@ const BlankPageTemplate = () => {
       ...movieData,
       currentSeason: targetSeason,
       currentEpisode: targetEpisode,
-      absoluteEpisodeNumber: seasonNumber === undefined ? episodeNumber : null
+      absoluteEpisodeNumber: isAbsolute || useAbsoluteNumbering ? absoluteNumber : null
     };
     
     // Update states
@@ -459,15 +506,28 @@ const BlankPageTemplate = () => {
     const episodeInfo = {
       season: targetSeason,
       episode: targetEpisode,
-      absoluteNumber: seasonNumber === undefined ? episodeNumber : null,
+      absoluteNumber: absoluteNumber,
       name: seasonDetails[targetSeason - 1]?.episodes?.find(
-        ep => ep.episode_number === targetEpisode
+        (ep, index) => index + 1 === targetEpisode
       )?.name || `Episode ${targetEpisode}`,
       timestamp: new Date().toISOString()
     };
     
     localStorage.setItem(`lastPlayed_${movieData.id}`, JSON.stringify(episodeInfo));
     setLastPlayedEpisode(episodeInfo);
+  };
+
+  // Save absolute numbering mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('useAbsoluteNumbering', useAbsoluteNumbering);
+  }, [useAbsoluteNumbering]);
+
+  // Add this helper function to calculate total episodes
+  const getTotalEpisodes = () => {
+    if (!seasonDetails) return 0;
+    return seasonDetails.reduce((total, season) => {
+      return total + (season?.episodes?.length || 0);
+    }, 0);
   };
 
   if (error) {
@@ -772,16 +832,27 @@ const BlankPageTemplate = () => {
 
             {/* Last Played Episode */}
             {lastPlayedEpisode && (
-              <>
+              <Box sx={{
+                mb: 4,
+                bgcolor: 'rgba(0, 0, 0, 0.4)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                border: '1px solid rgba(229, 9, 20, 0.3)'
+              }}>
                 <Box sx={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  mb: 2
+                  p: 2,
+                  bgcolor: 'rgba(229, 9, 20, 0.1)',
+                  borderBottom: '1px solid rgba(229, 9, 20, 0.2)'
                 }}>
-                  <Typography variant="subtitle1" sx={{ color: '#E50914', fontWeight: 'bold' }}>
-                    Last Played Episode
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <HistoryIcon sx={{ color: '#E50914' }} />
+                    <Typography variant="subtitle1" sx={{ color: '#E50914', fontWeight: 'bold' }}>
+                      Continue Watching
+                    </Typography>
+                  </Box>
                   <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
@@ -799,54 +870,71 @@ const BlankPageTemplate = () => {
                     <DeleteIcon />
                   </IconButton>
                 </Box>
-                <Box sx={{
-                  mb: 3,
-                  p: 2,
-                  bgcolor: 'rgba(229, 9, 20, 0.1)',
-                  borderRadius: 1,
-                  border: '1px solid rgba(229, 9, 20, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 2,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: 'rgba(229, 9, 20, 0.2)',
-                  }
-                }}
-                onClick={() => {
-                  // Update states
-                  setCurrentSeason(lastPlayedEpisode.season);
-                  setCurrentEpisode(lastPlayedEpisode.episode);
-                  setUseAbsoluteNumbering(!!lastPlayedEpisode.absoluteNumber);
-
-                  // Create updated movie data
-                  const updatedMovie = {
-                    ...movieData,
-                    currentSeason: lastPlayedEpisode.season,
-                    currentEpisode: lastPlayedEpisode.episode,
-                    absoluteEpisodeNumber: lastPlayedEpisode.absoluteNumber
-                  };
-
-                  // Generate and set new video URL
-                  const newUrl = getVideoUrl(updatedMovie, apiSource);
-                  setCurrentVideoUrl(newUrl);
-                  setIsPlayerOpen(true);
-                }}
+                
+                <Box 
+                  onClick={() => {
+                    setCurrentSeason(lastPlayedEpisode.season);
+                    setCurrentEpisode(lastPlayedEpisode.episode);
+                    setUseAbsoluteNumbering(!!lastPlayedEpisode.absoluteNumber);
+                    const updatedMovie = {
+                      ...movieData,
+                      currentSeason: lastPlayedEpisode.season,
+                      currentEpisode: lastPlayedEpisode.episode,
+                      absoluteEpisodeNumber: lastPlayedEpisode.absoluteNumber
+                    };
+                    const newUrl = getVideoUrl(updatedMovie, apiSource);
+                    setCurrentVideoUrl(newUrl);
+                    setIsPlayerOpen(true);
+                  }}
+                  sx={{
+                    p: 2,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+                    }
+                  }}
                 >
-                  <HistoryIcon sx={{ color: '#E50914' }} />
-                  <Box>
-                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.9)' }}>
-                      S{lastPlayedEpisode.season} E{lastPlayedEpisode.episode}: {lastPlayedEpisode.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
-                      {new Date(lastPlayedEpisode.timestamp).toLocaleString()}
-                    </Typography>
+                  <Box sx={{ 
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    bgcolor: 'rgba(229, 9, 20, 0.2)',
+                    '&:hover': {
+                      bgcolor: 'rgba(229, 9, 20, 0.3)',
+                    }
+                  }}>
+                    <PlayArrowIcon sx={{ color: '#E50914' }} />
                   </Box>
-                  <PlayArrowIcon sx={{ color: '#E50914' }} />
+                  
+                  <Box sx={{ flex: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                      <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontWeight: 'bold' }}>
+                        {lastPlayedEpisode.name}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        Season {lastPlayedEpisode.season} Episode {lastPlayedEpisode.episode}
+                      </Typography>
+                      {lastPlayedEpisode.absoluteNumber && (
+                        <Typography variant="body2" sx={{ color: 'rgba(229, 9, 20, 0.8)' }}>
+                          Absolute #{lastPlayedEpisode.absoluteNumber}
+                        </Typography>
+                      )}
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                        Last watched: {new Date(lastPlayedEpisode.timestamp).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Box>
-              </>
+              </Box>
             )}
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 3 }}>
@@ -871,11 +959,21 @@ const BlankPageTemplate = () => {
             </Box>
 
             {!useAbsoluteNumbering ? (
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: 2, 
+                justifyContent: 'center',
+                width: '100%',
+                '& .MuiSelect-select': {
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word'
+                }
+              }}>
                 <Select
                   value={currentSeason}
                   onChange={handleSeasonChange}
                   sx={{
+                    width: '30%',
                     minWidth: 120,
                     bgcolor: 'rgba(255, 255, 255, 0.1)',
                     color: 'white',
@@ -886,7 +984,7 @@ const BlankPageTemplate = () => {
                   }}
                 >
                   {Array.from({ length: totalSeasons }, (_, i) => (
-                    <MenuItem key={i + 1} value={String(i + 1)}>
+                    <MenuItem key={i + 1} value={i + 1}>
                       Season {i + 1}
                     </MenuItem>
                   ))}
@@ -896,7 +994,7 @@ const BlankPageTemplate = () => {
                   value={currentEpisode}
                   onChange={handleEpisodeChange}
                   sx={{
-                    minWidth: 120,
+                    width: '70%',
                     bgcolor: 'rgba(255, 255, 255, 0.1)',
                     color: 'white',
                     '& .MuiSelect-icon': { color: 'white' },
@@ -905,22 +1003,28 @@ const BlankPageTemplate = () => {
                     border: '1px solid rgba(255, 255, 255, 0.1)'
                   }}
                 >
-                  {seasonDetails[currentSeason - 1]?.episodes?.map((episode) => (
-                    <MenuItem key={episode.episode_number} value={String(episode.episode_number)}>
-                      Episode {episode.episode_number}
+                  {seasonDetails[currentSeason - 1]?.episodes?.map((episode, index) => (
+                    <MenuItem 
+                      key={index + 1} 
+                      value={index + 1}
+                      sx={{ 
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word'
+                      }}
+                    >
+                      Episode {index + 1}: {episode.name || `Episode ${index + 1}`}
+                      {useAbsoluteNumbering && (
+                        <Typography component="span" sx={{ ml: 1, color: 'rgba(229, 9, 20, 0.8)' }}>
+                          (Abs #{getAbsoluteNumber(currentSeason, index + 1)})
+                        </Typography>
+                      )}
                     </MenuItem>
                   ))}
                 </Select>
               </Box>
             ) : (
               <Select
-                value={(() => {
-                  let count = 0;
-                  for (let s = 0; s < currentSeason - 1; s++) {
-                    count += movieData.seasonDetails[s]?.episodes?.length || 0;
-                  }
-                  return count + currentEpisode;
-                })()}
+                value={getAbsoluteNumber(currentSeason, currentEpisode)}
                 onChange={handleAbsoluteEpisodeChange}
                 sx={{
                   width: '100%',
@@ -994,6 +1098,9 @@ const BlankPageTemplate = () => {
         onPlayEpisode={handlePlayEpisode}
         currentSeason={currentSeason}
         currentEpisode={currentEpisode}
+        seasonDetails={seasonDetails}
+        totalSeasons={totalSeasons}
+        totalEpisodes={getTotalEpisodes()}
       />
 
       {/* API Source Popup */}

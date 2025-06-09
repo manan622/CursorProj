@@ -160,27 +160,17 @@ const MovieList = ({
             sx={{ 
               display: 'flex',
               flexWrap: 'nowrap',
-              gap: { xs: 1, sm: 0, md: 0 },
+              gap: { xs: 0.5, sm: 1, md: 1.5 },
+              px: { xs: 1, sm: 2, md: 3 },
               '& > *': {
-                transition: 'transform 0.3s ease-in-out',
-                '&:hover': {
-                  transform: 'scale(1.02)',
-                  zIndex: 1
-                }
+                flex: '0 0 auto'
               }
             }}
           >
             {filteredMovies.map((movie, index) => (
               <Grid 
                 item 
-                key={`${categoryId}-${movie.id}-${index}`} 
-                sx={{ 
-                  flex: '0 0 auto',
-                  width: { xs: '160px', sm: '200px', md: '240px' },
-                  maxWidth: { xs: '160px', sm: '200px', md: '240px' },
-                  minWidth: { xs: '160px', sm: '200px', md: '240px' },
-                  p: 0
-                }}
+                key={`${categoryId}-${movie.id}-${index}`}
               >
                 <MovieCard
                   movie={movie}

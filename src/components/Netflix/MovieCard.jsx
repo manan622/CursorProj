@@ -19,10 +19,12 @@ const MovieCard = ({
   setSelectedMovie,
   setIsDetailsOpen,
   uniqueId,
-  isFullscreen
+  isSearchPage
 }) => {
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
   const theme = useTheme();
   const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
 
@@ -37,7 +39,36 @@ const MovieCard = ({
   };
 
   const handleClick = () => {
-    // Format the movie data before navigation
+    const currentTime = new Date().getTime();
+    
+    if (isAndroid) {
+      if (currentTime - lastClickTime < 300) {
+        // Double click detected, navigate to movie page
+        const formattedMovie = {
+          ...movie,
+          id: movie.id,
+          title: movie.title || movie.name,
+          overview: movie.overview,
+          poster_path: movie.poster_path,
+          backdrop_path: movie.backdrop_path,
+          releaseDate: movie.release_date || movie.first_air_date,
+          rating: Math.round((movie.vote_average || 0) * 10) / 10,
+          duration: formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120),
+          genres: movie.genre_ids ? movie.genre_ids.map(id => ({ id, name: getGenreName(id) })) : [],
+          mediaType: movie.mediaType || (movie.first_air_date ? 'tv' : 'movie'),
+          totalSeasons: movie.number_of_seasons || 1,
+          totalEpisodes: movie.number_of_episodes || 1
+        };
+        navigate(`/movie/${movie.id}`, { state: { movie: formattedMovie } });
+      } else {
+        // Single click, toggle details
+        setIsPressed(!isPressed);
+      }
+      setLastClickTime(currentTime);
+      return;
+    }
+
+    // Non-Android behavior remains the same
     const formattedMovie = {
       ...movie,
       id: movie.id,
@@ -53,8 +84,6 @@ const MovieCard = ({
       totalSeasons: movie.number_of_seasons || 1,
       totalEpisodes: movie.number_of_episodes || 1
     };
-
-    // Navigate to the movie details page with the formatted data
     navigate(`/movie/${movie.id}`, { state: { movie: formattedMovie } });
   };
 
@@ -85,31 +114,59 @@ const MovieCard = ({
   };
 
   return (
-    <Grid item xs={isAndroid ? 6 : 6} sm={4} md={3} lg={2.4} sx={{ 
-      aspectRatio: '2/3', 
-      minHeight: isAndroid ? '20px' : { xs: '180px', sm: '240px', md: '300px' },
-      width: isAndroid ? '100%' : 'auto',
-      maxWidth: isAndroid ? '100%' : 'none'
-    }}>
+    <Grid item 
+      {...(!isSearchPage ? {
+        xs: isAndroid ? 6 : 6,
+        sm: 4,
+        md: 3,
+        lg: 2.4
+      } : {})}
+      sx={{ 
+        aspectRatio: '2/3',
+        ...(isSearchPage ? {
+          width: '100%',
+          height: '100%'
+        } : {
+          width: { 
+            xs: isAndroid ? '160px' : '140px', 
+            sm: '180px', 
+            md: '200px', 
+            lg: '240px' 
+          },
+          maxWidth: { 
+            xs: isAndroid ? '160px' : '140px', 
+            sm: '180px', 
+            md: '200px', 
+            lg: '240px' 
+          },
+          minWidth: { 
+            xs: isAndroid ? '160px' : '140px', 
+            sm: '180px', 
+            md: '200px', 
+            lg: '240px' 
+          }
+        })
+      }}
+    >
       <Card
         sx={{
-          margin: '10px',
-          width:isAndroid ?'100%':'228px',
-          height:isAndroid ?'100%' : '99%',
+          margin: isSearchPage ? 0 : { xs: isAndroid ? '3px' : '2px', sm: '4px', md: '6px' },
+          width: '100%',
+          height: '100%',
           bgcolor: 'transparent',
           cursor: 'pointer',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           boxShadow: 'none',
           '&:hover': {
-            transform: 'scale(1.05)',
+            transform: isAndroid ? 'none' : 'scale(1.05)',
             zIndex: 2,
             '& .MuiCardMedia-root': {
-              transform: 'scale(1.1)',
+              transform: isAndroid ? 'none' : 'scale(1.1)',
             }
           },
           display: 'flex',
           flexDirection: 'column',
-          borderRadius: '12px',
+          borderRadius: { xs: '8px', sm: '10px', md: '12px' },
           overflow: 'hidden',
           position: 'relative',
           '&::after': {
@@ -120,19 +177,19 @@ const MovieCard = ({
             right: 0,
             bottom: 0,
             border: '2px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '12px',
+            borderRadius: 'inherit',
             opacity: 0,
             transition: 'opacity 0.3s ease-in-out',
           },
           '&:hover::after': {
-            opacity: 1,
+            opacity: isAndroid ? 0 : 1,
           }
         }}
-        onMouseEnter={() => setHoveredMovie(uniqueId)}
-        onMouseLeave={() => setHoveredMovie(null)}
+        onMouseEnter={() => !isAndroid && setHoveredMovie(uniqueId)}
+        onMouseLeave={() => !isAndroid && setHoveredMovie(null)}
         onClick={handleClick}
       >
-        <Box sx={{ position: 'relative', flexGrow: 1, borderRadius: '12px', overflow: 'hidden' }}>
+        <Box sx={{ position: 'relative', flexGrow: 1, borderRadius: 'inherit', overflow: 'hidden' }}>
           {!imageLoaded && (
             <Skeleton 
               variant="rectangular" 
@@ -144,7 +201,7 @@ const MovieCard = ({
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                borderRadius: '12px'
+                borderRadius: 'inherit'
               }} 
             />
           )}
@@ -163,7 +220,7 @@ const MovieCard = ({
               aspectRatio: '2/3'
             }}
           />
-          {hoveredMovie === uniqueId && (
+          {(hoveredMovie === uniqueId || (isAndroid && isPressed)) && (
             <Paper
               sx={{
                 position: 'absolute',
@@ -173,11 +230,11 @@ const MovieCard = ({
                 bottom: 0,
                 bgcolor: 'rgba(24, 24, 24, 0.85)',
                 backdropFilter: 'blur(5px)',
-                p: isAndroid ? 2 : { xs: 1, sm: 1.5, md: 2 },
+                p: { xs: 1, sm: 1.5, md: 2 },
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                borderRadius: '12px',
+                borderRadius: 'inherit',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -190,7 +247,7 @@ const MovieCard = ({
                   right: 0,
                   bottom: 0,
                   background: 'linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.4))',
-                  borderRadius: '12px',
+                  borderRadius: 'inherit',
                   zIndex: -1
                 }
               }}
@@ -199,9 +256,18 @@ const MovieCard = ({
                 <Typography variant="h6" sx={{ 
                   color: 'white', 
                   mb: 0.5, 
-                  fontSize: isAndroid ? '1.4rem' : { xs: '0.8rem', sm: '0.9rem', md: '1rem' }, 
+                  fontSize: { 
+                    xs: '0.7rem',
+                    sm: '0.8rem',
+                    md: '0.9rem',
+                    lg: '1rem'
+                  }, 
                   fontWeight: 'bold',
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
                 }}>
                   {movie.title || movie.name}
                 </Typography>
@@ -211,11 +277,16 @@ const MovieCard = ({
                     color: 'rgba(255, 255, 255, 0.9)', 
                     mb: 1,
                     display: '-webkit-box',
-                    WebkitLineClamp: isAndroid ? 4 : { xs: 2, sm: 3 },
+                    WebkitLineClamp: { xs: 2, sm: 3, md: 4 },
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontSize: { 
+                      xs: '0.6rem',
+                      sm: '0.65rem',
+                      md: '0.7rem',
+                      lg: '0.75rem'
+                    },
                     lineHeight: '1.4',
                     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}
@@ -225,13 +296,17 @@ const MovieCard = ({
                 <Box sx={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: isAndroid ? 2 : 1, 
+                  gap: { xs: 0.5, sm: 1 }, 
                   flexWrap: 'wrap',
                   mb: 1
                 }}>
                   <Typography variant="body2" sx={{ 
-                    color: '#46d369', 
-                    fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontSize: { 
+                      xs: '0.6rem',
+                      sm: '0.65rem',
+                      md: '0.7rem',
+                      lg: '0.75rem'
+                    },
                     fontWeight: 'bold',
                     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}>
@@ -239,27 +314,28 @@ const MovieCard = ({
                   </Typography>
                   <Typography variant="body2" sx={{ 
                     color: 'rgba(255, 255, 255, 0.9)', 
-                    fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                    fontSize: { 
+                      xs: '0.6rem',
+                      sm: '0.65rem',
+                      md: '0.7rem',
+                      lg: '0.75rem'
+                    },
                     textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                   }}>
                     • {formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120)}
                   </Typography>
-                  {movie.release_date && (
+                  {(movie.release_date || movie.first_air_date) && (
                     <Typography variant="body2" sx={{ 
                       color: 'rgba(255, 255, 255, 0.9)', 
-                      fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
+                      fontSize: { 
+                        xs: '0.6rem',
+                        sm: '0.65rem',
+                        md: '0.7rem',
+                        lg: '0.75rem'
+                      },
                       textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                     }}>
-                      • {new Date(movie.release_date).getFullYear()}
-                    </Typography>
-                  )}
-                  {movie.first_air_date && (
-                    <Typography variant="body2" sx={{ 
-                      color: 'rgba(255, 255, 255, 0.9)', 
-                      fontSize: isAndroid ? '1.1rem' : { xs: '0.65rem', sm: '0.7rem', md: '0.75rem' },
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
-                    }}>
-                      • {new Date(movie.first_air_date).getFullYear()}
+                      • {new Date(movie.release_date || movie.first_air_date).getFullYear()}
                     </Typography>
                   )}
                 </Box>
@@ -267,7 +343,7 @@ const MovieCard = ({
 
               <Box sx={{ 
                 display: 'flex', 
-                gap: isAndroid ? 2 : 1, 
+                gap: { xs: 0.5, sm: 1 }, 
                 justifyContent: 'center',
                 mt: 'auto',
                 position: 'relative',
@@ -283,7 +359,11 @@ const MovieCard = ({
                     sx={{
                       bgcolor: 'rgba(255, 255, 255, 0.15)',
                       color: 'white',
-                      padding: isAndroid ? '12px' : { xs: '4px', sm: '6px', md: '8px' },
+                      padding: { 
+                        xs: isAndroid ? '8px' : '4px', 
+                        sm: '6px', 
+                        md: '8px' 
+                      },
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'
@@ -293,7 +373,12 @@ const MovieCard = ({
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       cursor: 'pointer',
                       '& .MuiSvgIcon-root': {
-                        fontSize: isAndroid ? '1.8rem' : { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                        fontSize: { 
+                          xs: isAndroid ? '1.2rem' : '0.8rem',
+                          sm: '0.9rem',
+                          md: '1rem',
+                          lg: '1.25rem'
+                        }
                       }
                     }}
                   >
@@ -309,19 +394,37 @@ const MovieCard = ({
                       toggleMyList(movie);
                     }}
                     sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'white',
-                      padding: isAndroid ? '12px' : { xs: '4px', sm: '6px', md: '8px' },
+                      bgcolor: 'transparent',
+                      color: isInMyList(movie.id) ? '#E50914' : 'white',
+                      padding: { 
+                        xs: isAndroid ? '8px' : '4px', 
+                        sm: '6px', 
+                        md: '8px' 
+                      },
+                      border: isInMyList(movie.id) 
+                        ? '1px solid rgba(229, 9, 20, 0.5)'
+                        : '1px solid rgba(255, 255, 255, 0.2)',
                       '&:hover': { 
-                        bgcolor: 'rgba(255, 255, 255, 0.25)',
-                        transform: 'scale(1.1)'
+                        bgcolor: isInMyList(movie.id) ? 'rgba(229, 9, 20, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                        transform: 'scale(1.1)',
+                        border: isInMyList(movie.id)
+                          ? '1px solid rgba(229, 9, 20, 0.8)'
+                          : '1px solid rgba(255, 255, 255, 0.4)'
+                      },
+                      '&:active': {
+                        transform: 'scale(0.95)'
                       },
                       transition: 'all 0.2s ease-in-out',
-                      backdropFilter: 'blur(4px)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
                       cursor: 'pointer',
                       '& .MuiSvgIcon-root': {
-                        fontSize: isAndroid ? '1.8rem' : { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                        fontSize: { 
+                          xs: isAndroid ? '1.2rem' : '0.8rem',
+                          sm: '0.9rem',
+                          md: '1rem',
+                          lg: '1.25rem'
+                        },
+                        transform: isInMyList(movie.id) ? 'rotate(45deg)' : 'none',
+                        transition: 'transform 0.2s ease-in-out'
                       }
                     }}
                   >
@@ -340,7 +443,11 @@ const MovieCard = ({
                     sx={{
                       bgcolor: 'rgba(255, 255, 255, 0.15)',
                       color: 'white',
-                      padding: isAndroid ? '12px' : { xs: '4px', sm: '6px', md: '8px' },
+                      padding: { 
+                        xs: isAndroid ? '8px' : '4px', 
+                        sm: '6px', 
+                        md: '8px' 
+                      },
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'
@@ -350,7 +457,12 @@ const MovieCard = ({
                       border: '1px solid rgba(255, 255, 255, 0.1)',
                       cursor: 'pointer',
                       '& .MuiSvgIcon-root': {
-                        fontSize: isAndroid ? '1.8rem' : { xs: '0.9rem', sm: '1rem', md: '1.25rem' }
+                        fontSize: { 
+                          xs: isAndroid ? '1.2rem' : '0.8rem',
+                          sm: '0.9rem',
+                          md: '1rem',
+                          lg: '1.25rem'
+                        }
                       }
                     }}
                   >

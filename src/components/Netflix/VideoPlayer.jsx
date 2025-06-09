@@ -6,7 +6,7 @@ import SkipNextIcon from '@mui/icons-material/SkipNext';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { alpha } from '@mui/material/styles';
 
-const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, showNextButton = false, onPlayEpisode, currentSeason, currentEpisode, seasonDetails = [] }) => {
+const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, showNextButton = false, onPlayEpisode, currentSeason, currentEpisode, seasonDetails = [], totalSeasons = 0, totalEpisodes = 0 }) => {
   const [videoKey, setVideoKey] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [episodeInput, setEpisodeInput] = useState('');
@@ -170,21 +170,127 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
     if (!onPlayEpisode || !episodeInput) return;
     
     if (useAbsoluteNumbering) {
-      // When in absolute mode, pass the absolute episode number directly
-      onPlayEpisode(parseInt(episodeInput), undefined, true); // Added third parameter to indicate absolute mode
-    } else if (seasonInput && episodeInput) {
-      // In regular mode, calculate absolute number but don't use it
-      let absoluteNumber = 0;
-      for (let s = 0; s < parseInt(seasonInput) - 1; s++) {
-        absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+      const absoluteNumber = parseInt(episodeInput);
+      if (absoluteNumber > 0 && absoluteNumber <= totalEpisodes) {
+        onPlayEpisode(absoluteNumber, undefined, true);
+        setDisplayAbsoluteNumber(absoluteNumber.toString());
       }
-      absoluteNumber += parseInt(episodeInput);
-      onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput), false);
+    } else if (seasonInput && episodeInput) {
+      const season = parseInt(seasonInput);
+      const episode = parseInt(episodeInput);
+      
+      // Validate season and episode numbers
+      if (season > 0 && season <= totalSeasons) {
+        const seasonEpisodeCount = seasonDetails[season - 1]?.episodes?.length || 0;
+        if (episode > 0 && episode <= seasonEpisodeCount) {
+          onPlayEpisode(episode, season, false);
+          // Calculate and display absolute number
+          let absoluteNumber = 0;
+          for (let s = 0; s < season - 1; s++) {
+            absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+          }
+          setDisplayAbsoluteNumber((absoluteNumber + episode).toString());
+        }
+      }
     }
     
-    // Only reset the input fields, not the mode
+    // Reset input fields after playing
     setEpisodeInput('');
     setSeasonInput('');
+  };
+
+  // Update absolute episode number display when inputs change
+  useEffect(() => {
+    if (useAbsoluteNumbering && episodeInput) {
+      setDisplayAbsoluteNumber(episodeInput);
+    } else if (!useAbsoluteNumbering && seasonInput && episodeInput) {
+      let absoluteNumber = 0;
+      const season = parseInt(seasonInput);
+      const episode = parseInt(episodeInput);
+      
+      if (season > 0 && season <= totalSeasons) {
+        // Calculate absolute number based on previous seasons
+        for (let s = 0; s < season - 1; s++) {
+          absoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+        }
+        // Add current episode number
+        absoluteNumber += episode;
+        setDisplayAbsoluteNumber(absoluteNumber.toString());
+      }
+    }
+  }, [useAbsoluteNumbering, seasonInput, episodeInput, seasonDetails, totalSeasons]);
+
+  // Handle input validation and constraints
+  const handleEpisodeInputChange = (e) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    if (useAbsoluteNumbering) {
+      // In absolute mode, validate against total episodes
+      if (!value || (parseInt(value) > 0 && parseInt(value) <= totalEpisodes)) {
+        setEpisodeInput(value);
+      }
+    } else {
+      // In regular mode, validate against current season's episodes
+      const currentSeasonEpisodes = seasonDetails[parseInt(seasonInput) - 1]?.episodes?.length || 0;
+      if (!value || (parseInt(value) > 0 && parseInt(value) <= currentSeasonEpisodes)) {
+        setEpisodeInput(value);
+      }
+    }
+  };
+
+  const handleSeasonInputChange = (e) => {
+    const value = e.target.value.replace(/[^0-9]/g, '');
+    if (!value || (parseInt(value) > 0 && parseInt(value) <= totalSeasons)) {
+      setSeasonInput(value);
+      // Reset episode input when season changes
+      setEpisodeInput('');
+    }
+  };
+
+  const handleAbsoluteNumberingToggle = (e) => {
+    const newMode = e.target.checked;
+    setUseAbsoluteNumbering(newMode);
+    
+    // Calculate absolute number for current episode
+    let absoluteNumber = null;
+    if (newMode) {
+      let count = 0;
+      for (let s = 0; s < currentSeason - 1; s++) {
+        count += seasonDetails[s]?.episodes?.length || 0;
+      }
+      absoluteNumber = count + parseInt(currentEpisode);
+    }
+    
+    // Call parent handler with current episode info and new mode
+    onPlayEpisode(
+      newMode ? absoluteNumber : parseInt(currentEpisode),
+      newMode ? undefined : parseInt(currentSeason),
+      newMode
+    );
+  };
+
+  const handleNextEpisode = () => {
+    if (!onNextEpisode) return;
+    
+    // Calculate absolute number for next episode if in absolute mode
+    if (useAbsoluteNumbering) {
+      let currentAbsoluteNumber = 0;
+      for (let s = 0; s < currentSeason - 1; s++) {
+        currentAbsoluteNumber += seasonDetails[s]?.episodes?.length || 0;
+      }
+      currentAbsoluteNumber += parseInt(currentEpisode);
+      
+      // Increment absolute number
+      const nextAbsoluteNumber = currentAbsoluteNumber + 1;
+      
+      // If we've reached the end of all episodes, wrap back to episode 1
+      if (nextAbsoluteNumber > totalEpisodes) {
+        onPlayEpisode(1, undefined, true);
+      } else {
+        onPlayEpisode(nextAbsoluteNumber, undefined, true);
+      }
+    } else {
+      onNextEpisode();
+    }
   };
 
   return (
@@ -341,7 +447,7 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
                   <Switch
                     size="small"
                     checked={useAbsoluteNumbering}
-                    onChange={(e) => setUseAbsoluteNumbering(e.target.checked)}
+                    onChange={handleAbsoluteNumberingToggle}
                     sx={{
                       '& .MuiSwitch-switchBase.Mui-checked': {
                         color: '#E50914',
@@ -362,20 +468,13 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
               <TextField
                 size="small"
                 value={useAbsoluteNumbering ? episodeInput : seasonInput}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9]/g, '');
-                  if (useAbsoluteNumbering) {
-                    setEpisodeInput(value);
-                  } else {
-                    setSeasonInput(value);
-                  }
-                }}
+                onChange={useAbsoluteNumbering ? handleEpisodeInputChange : handleSeasonInputChange}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     handlePlayEpisode();
                   }
                 }}
-                placeholder={useAbsoluteNumbering ? "Ep #" : "S #"}
+                placeholder={useAbsoluteNumbering ? `1-${totalEpisodes}` : `1-${totalSeasons}`}
                 sx={{
                   width: '50px',
                   '& .MuiInputBase-input': {
@@ -409,18 +508,13 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
                 <TextField
                   size="small"
                   value={episodeInput}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    setEpisodeInput(value);
-                  }}
+                  onChange={handleEpisodeInputChange}
                   onKeyPress={(e) => {
-                    if (e.key === 'Enter' && onPlayEpisode && seasonInput && episodeInput) {
-                      onPlayEpisode(parseInt(episodeInput), parseInt(seasonInput));
-                      setEpisodeInput('');
-                      setSeasonInput('');
+                    if (e.key === 'Enter') {
+                      handlePlayEpisode();
                     }
                   }}
-                  placeholder="E #"
+                  placeholder={seasonInput ? `1-${seasonDetails[parseInt(seasonInput) - 1]?.episodes?.length || '?'}` : "E #"}
                   sx={{
                     width: '50px',
                     '& .MuiInputBase-input': {
@@ -478,7 +572,7 @@ const VideoPlayer = ({ open, onClose, videoUrl, onApiPopupOpen, onNextEpisode, s
               </Tooltip>
               <Tooltip title="Next episode" placement="bottom">
                 <IconButton
-                  onClick={onNextEpisode}
+                  onClick={handleNextEpisode}
                   sx={{
                     color: 'white',
                     bgcolor: 'rgba(255, 255, 255, 0.1)',
