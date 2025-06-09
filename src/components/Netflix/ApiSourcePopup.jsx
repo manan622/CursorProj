@@ -55,8 +55,16 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
     const savedFavorites = localStorage.getItem('favoriteApis');
     const savedRecent = localStorage.getItem('recentApis');
     if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
-    if (savedRecent) setRecentlyUsed(JSON.parse(savedRecent));
-  }, []);
+    if (savedRecent) {
+      const recent = JSON.parse(savedRecent);
+      // Filter out any APIs that no longer exist
+      const validRecent = recent.filter(id => apiSources.some(api => api.id === id));
+      setRecentlyUsed(validRecent);
+      if (validRecent.length !== recent.length) {
+        localStorage.setItem('recentApis', JSON.stringify(validRecent));
+      }
+    }
+  }, [apiSources]);
 
   // Check API status and latency
   const checkApiStatus = useCallback(async () => {
@@ -255,6 +263,7 @@ const ApiSourcePopup = ({ open, onClose, currentApi, onApiChange, apiSources }) 
               <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', pb: 1 }}>
                 {recentlyUsed.map(apiId => {
                   const api = apiSources.find(a => a.id === apiId);
+                  if (!api) return null;
                   return (
                     <Chip
                       key={apiId}
