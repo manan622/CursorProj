@@ -84,6 +84,10 @@ const MovieCard = memo(({
     setImageLoaded(true);
   }, []);
 
+  const handleImageError = useCallback(() => {
+    setImageLoaded(false);
+  }, []);
+
   const handleClick = useCallback(() => {
     const currentTime = new Date().getTime();
     
@@ -264,6 +268,7 @@ const MovieCard = memo(({
             decoding="async"
             fetchPriority={isFirstCard ? "high" : "low"}
             onLoad={handleImageLoad}
+            onError={handleImageError}
             sx={{
               width: '100%',
               height: '100%',
