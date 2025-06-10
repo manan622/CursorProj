@@ -1,4 +1,4 @@
-import React, { useState, memo, useCallback } from 'react';
+import React, { useState, memo, useCallback, useEffect } from 'react';
 import { Box, Typography, IconButton, Card, CardMedia, Paper, Tooltip, Grid, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
@@ -8,25 +8,40 @@ import { useNavigate } from 'react-router-dom';
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
+// Preload critical images
+const preloadImage = (src) => {
+  const img = new Image();
+  img.src = src;
+};
+
 // Optimize image URL generation with responsive sizes
 const getOptimizedImageUrl = (path, isSearchPage, isAndroid) => {
   if (!path) return 'https://via.placeholder.com/300x450?text=No+Image';
   
-  // Use smaller image sizes for better performance
-  const size = isSearchPage ? 'w185' : 'w154'; // Reduced from w342/w300 to w185/w154
+  // Use even smaller image sizes for Android
+  const size = isAndroid 
+    ? (isSearchPage ? 'w154' : 'w92')  // Smaller sizes for Android
+    : (isSearchPage ? 'w185' : 'w154'); // Original sizes for desktop
+  
   return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
 };
 
-// Generate srcset for responsive images
+// Generate srcset for responsive images with Android optimization
 const getImageSrcSet = (path) => {
   if (!path) return '';
   
-  const sizes = [
-    { width: 'w92', size: '92w' },
-    { width: 'w154', size: '154w' },
-    { width: 'w185', size: '185w' },
-    { width: 'w342', size: '342w' }
-  ];
+  const sizes = isAndroid 
+    ? [
+        { width: 'w92', size: '92w' },
+        { width: 'w154', size: '154w' },
+        { width: 'w185', size: '185w' }
+      ]
+    : [
+        { width: 'w92', size: '92w' },
+        { width: 'w154', size: '154w' },
+        { width: 'w185', size: '185w' },
+        { width: 'w342', size: '342w' }
+      ];
   
   return sizes
     .map(({ width, size }) => `${TMDB_IMAGE_BASE_URL}/${width}${path} ${size}`)
@@ -44,7 +59,9 @@ const MovieCard = memo(({
   setSelectedMovie,
   setIsDetailsOpen,
   uniqueId,
-  isSearchPage
+  isSearchPage,
+  isFirstCard = false, // Add prop to identify first card
+  index
 }) => {
   const navigate = useNavigate();
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -55,6 +72,29 @@ const MovieCard = memo(({
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isLargeScreen = useMediaQuery(theme.breakpoints.down('lg'));
+
+  // Preload image for first card
+  useEffect(() => {
+    if (isFirstCard && movie.poster_path) {
+      const imageUrl = getOptimizedImageUrl(movie.poster_path, isSearchPage, isAndroid);
+      preloadImage(imageUrl);
+      
+      // For Android, also preload the next few images
+      if (isAndroid) {
+        // Preload next 2 images for smoother scrolling
+        const nextImages = [1, 2].map(offset => {
+          const nextMovie = document.querySelector(`[data-movie-index="${index + offset}"]`);
+          return nextMovie?.getAttribute('data-poster-path');
+        }).filter(Boolean);
+        
+        nextImages.forEach(path => {
+          if (path) {
+            preloadImage(getOptimizedImageUrl(path, isSearchPage, isAndroid));
+          }
+        });
+      }
+    }
+  }, [isFirstCard, movie.poster_path, isSearchPage, isAndroid, index]);
 
   // Determine the appropriate image size based on screen size
   const getImageSize = useCallback(() => {
@@ -181,6 +221,8 @@ const MovieCard = memo(({
           }
         })
       }}
+      data-movie-index={index}
+      data-poster-path={movie.poster_path}
     >
       <Card
         sx={{
@@ -243,11 +285,13 @@ const MovieCard = memo(({
             component="img"
             image={getOptimizedImageUrl(movie.poster_path, isSearchPage, isAndroid)}
             srcSet={getImageSrcSet(movie.poster_path)}
-            sizes={isSearchPage ? '342px' : '154px'}
+            sizes={isAndroid 
+              ? (isSearchPage ? '154px' : '92px')
+              : (isSearchPage ? '342px' : '154px')}
             alt={movie.title || movie.name}
-            loading="lazy"
+            loading={isFirstCard ? "eager" : "lazy"}
             decoding="async"
-            fetchPriority="high"
+            fetchPriority={isFirstCard ? "high" : "low"}
             onLoad={handleImageLoad}
             sx={{
               width: '100%',

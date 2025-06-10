@@ -183,6 +183,7 @@ const MovieList = ({
                   setSelectedMovie={setSelectedMovie}
                   setIsDetailsOpen={setIsDetailsOpen}
                   uniqueId={`${categoryId}-${movie.id}-${index}`}
+                  isFirstCard={index === 0}
                 />
               </Grid>
             ))}

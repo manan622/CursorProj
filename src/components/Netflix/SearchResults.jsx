@@ -214,6 +214,7 @@ const SearchResults = ({
               setIsDetailsOpen={setIsDetailsOpen}
               uniqueId={`search-${movie.id}-${index}`}
               isSearchPage={true}
+              isFirstCard={index === 0}
             />
           ))}
         </Grid>
