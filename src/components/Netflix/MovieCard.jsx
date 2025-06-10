@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback } from 'react';
 import { Box, Typography, IconButton, Card, CardMedia, Paper, Tooltip, Grid, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
@@ -8,7 +8,32 @@ import { useNavigate } from 'react-router-dom';
 
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
-const MovieCard = ({
+// Optimize image URL generation with responsive sizes
+const getOptimizedImageUrl = (path, isSearchPage, isAndroid) => {
+  if (!path) return 'https://via.placeholder.com/300x450?text=No+Image';
+  
+  // Use smaller image sizes for better performance
+  const size = isSearchPage ? 'w185' : 'w154'; // Reduced from w342/w300 to w185/w154
+  return `${TMDB_IMAGE_BASE_URL}/${size}${path}`;
+};
+
+// Generate srcset for responsive images
+const getImageSrcSet = (path) => {
+  if (!path) return '';
+  
+  const sizes = [
+    { width: 'w92', size: '92w' },
+    { width: 'w154', size: '154w' },
+    { width: 'w185', size: '185w' },
+    { width: 'w342', size: '342w' }
+  ];
+  
+  return sizes
+    .map(({ width, size }) => `${TMDB_IMAGE_BASE_URL}/${width}${path} ${size}`)
+    .join(', ');
+};
+
+const MovieCard = memo(({
   movie,
   hoveredMovie,
   setHoveredMovie,
@@ -27,24 +52,57 @@ const MovieCard = ({
   const [lastClickTime, setLastClickTime] = useState(0);
   const theme = useTheme();
   const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMediumScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const isLargeScreen = useMediaQuery(theme.breakpoints.down('lg'));
 
-  // Function to get the best image format based on browser support
-  const getOptimizedImageUrl = (path) => {
-    if (!path) return 'https://via.placeholder.com/300x450?text=No+Image';
-    return `${TMDB_IMAGE_BASE_URL}/w500${path}`;
-  };
+  // Determine the appropriate image size based on screen size
+  const getImageSize = useCallback(() => {
+    if (isSearchPage) return 'w342';
+    if (isSmallScreen) return isAndroid ? 'w300' : 'w260';
+    if (isMediumScreen) return 'w340';
+    if (isLargeScreen) return 'w380';
+    return 'w440';
+  }, [isSearchPage, isSmallScreen, isMediumScreen, isLargeScreen, isAndroid]);
 
-  const handleImageLoad = () => {
+  const handleImageLoad = useCallback(() => {
     setImageLoaded(true);
-  };
+  }, []);
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     const currentTime = new Date().getTime();
     
     if (isAndroid) {
       if (currentTime - lastClickTime < 300) {
-        // Double click detected, navigate to movie page
-        const formattedMovie = {
+        navigate(`/movie/${movie.id}`, { 
+          state: { 
+            movie: {
+              ...movie,
+              id: movie.id,
+              title: movie.title || movie.name,
+              overview: movie.overview,
+              poster_path: movie.poster_path,
+              backdrop_path: movie.backdrop_path,
+              releaseDate: movie.release_date || movie.first_air_date,
+              rating: Math.round((movie.vote_average || 0) * 10) / 10,
+              duration: formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120),
+              genres: movie.genre_ids ? movie.genre_ids.map(id => ({ id, name: getGenreName(id) })) : [],
+              mediaType: movie.mediaType || (movie.first_air_date ? 'tv' : 'movie'),
+              totalSeasons: movie.number_of_seasons || 1,
+              totalEpisodes: movie.number_of_episodes || 1
+            }
+          }
+        });
+      } else {
+        setIsPressed(!isPressed);
+      }
+      setLastClickTime(currentTime);
+      return;
+    }
+
+    navigate(`/movie/${movie.id}`, { 
+      state: { 
+        movie: {
           ...movie,
           id: movie.id,
           title: movie.title || movie.name,
@@ -58,34 +116,10 @@ const MovieCard = ({
           mediaType: movie.mediaType || (movie.first_air_date ? 'tv' : 'movie'),
           totalSeasons: movie.number_of_seasons || 1,
           totalEpisodes: movie.number_of_episodes || 1
-        };
-        navigate(`/movie/${movie.id}`, { state: { movie: formattedMovie } });
-      } else {
-        // Single click, toggle details
-        setIsPressed(!isPressed);
+        }
       }
-      setLastClickTime(currentTime);
-      return;
-    }
-
-    // Non-Android behavior remains the same
-    const formattedMovie = {
-      ...movie,
-      id: movie.id,
-      title: movie.title || movie.name,
-      overview: movie.overview,
-      poster_path: movie.poster_path,
-      backdrop_path: movie.backdrop_path,
-      releaseDate: movie.release_date || movie.first_air_date,
-      rating: Math.round((movie.vote_average || 0) * 10) / 10,
-      duration: formatDuration(movie.runtime || movie.episode_run_time?.[0] || 120),
-      genres: movie.genre_ids ? movie.genre_ids.map(id => ({ id, name: getGenreName(id) })) : [],
-      mediaType: movie.mediaType || (movie.first_air_date ? 'tv' : 'movie'),
-      totalSeasons: movie.number_of_seasons || 1,
-      totalEpisodes: movie.number_of_episodes || 1
-    };
-    navigate(`/movie/${movie.id}`, { state: { movie: formattedMovie } });
-  };
+    });
+  }, [movie, isAndroid, lastClickTime, isPressed, navigate, formatDuration]);
 
   // Helper function to get genre name from ID
   const getGenreName = (genreId) => {
@@ -128,22 +162,22 @@ const MovieCard = ({
           height: '100%'
         } : {
           width: { 
-            xs: isAndroid ? '160px' : '140px', 
-            sm: '180px', 
-            md: '200px', 
-            lg: '240px' 
+            xs: isAndroid ? '150px' : '130px', 
+            sm: '170px', 
+            md: '190px', 
+            lg: '220px' 
           },
           maxWidth: { 
-            xs: isAndroid ? '160px' : '140px', 
-            sm: '180px', 
-            md: '200px', 
-            lg: '240px' 
+            xs: isAndroid ? '150px' : '130px', 
+            sm: '170px', 
+            md: '190px', 
+            lg: '220px' 
           },
           minWidth: { 
-            xs: isAndroid ? '160px' : '140px', 
-            sm: '180px', 
-            md: '200px', 
-            lg: '240px' 
+            xs: isAndroid ? '150px' : '130px', 
+            sm: '170px', 
+            md: '190px', 
+            lg: '220px' 
           }
         })
       }}
@@ -207,9 +241,13 @@ const MovieCard = ({
           )}
           <CardMedia
             component="img"
-            image={getOptimizedImageUrl(movie.poster_path)}
+            image={getOptimizedImageUrl(movie.poster_path, isSearchPage, isAndroid)}
+            srcSet={getImageSrcSet(movie.poster_path)}
+            sizes={isSearchPage ? '342px' : '154px'}
             alt={movie.title || movie.name}
             loading="lazy"
+            decoding="async"
+            fetchPriority="high"
             onLoad={handleImageLoad}
             sx={{
               width: '100%',
@@ -217,7 +255,11 @@ const MovieCard = ({
               objectFit: 'cover',
               visibility: imageLoaded ? 'visible' : 'hidden',
               transition: 'transform 0.3s ease-in-out',
-              aspectRatio: '2/3'
+              aspectRatio: '2/3',
+              willChange: 'transform',
+              // Add blur-up loading effect
+              filter: imageLoaded ? 'none' : 'blur(10px)',
+              transform: imageLoaded ? 'none' : 'scale(1.1)',
             }}
           />
           {(hoveredMovie === uniqueId || (isAndroid && isPressed)) && (
@@ -476,6 +518,6 @@ const MovieCard = ({
       </Card>
     </Grid>
   );
-};
+});
 
 export default MovieCard; 
