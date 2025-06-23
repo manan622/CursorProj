@@ -10,12 +10,22 @@ import {
   Slide,
   Container,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Avatar,
+  Menu,
+  MenuItem,
+  Divider
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import LanguageIcon from '@mui/icons-material/Language';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import SearchIcon from '@mui/icons-material/Search';
+import HomeIcon from '@mui/icons-material/Home';
+import MovieIcon from '@mui/icons-material/Movie';
+import TvIcon from '@mui/icons-material/Tv';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import HistoryIcon from '@mui/icons-material/History';
 import StyledSearchBar from './StyledSearchBar';
 
 // Hide header on scroll down, show on scroll up
@@ -37,6 +47,16 @@ const Header = ({
 }) => {
   const theme = useTheme();
   const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [anchorEl, setAnchorEl] = React.useState(null);
+
+  const handleProfileMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setAnchorEl(null);
+  };
 
   return (
     <HideOnScroll>
@@ -49,28 +69,14 @@ const Header = ({
               rgba(20, 20, 20, 0.98) 0%,
               rgba(30, 20, 25, 0.98) 50%,
               rgba(20, 20, 20, 0.98) 100%
-            ),
-            linear-gradient(
-              45deg,
-              rgba(229, 9, 20, 0.03) 0%,
-              transparent 20%,
-              transparent 80%,
-              rgba(229, 9, 20, 0.03) 100%
-            ),
-            repeating-linear-gradient(
-              45deg,
-              rgba(255, 255, 255, 0.02) 0px,
-              rgba(255, 255, 255, 0.02) 1px,
-              transparent 1px,
-              transparent 10px
             )
           `,
-          backgroundSize: '100% 100%, 100% 100%, 20px 20px',
-          boxShadow: 'none',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+          borderBottom: '1px solid rgba(229, 9, 20, 0.2)',
           transition: 'all 0.3s ease-in-out',
-          backdropFilter: 'blur(10px)',
-          height: isAndroid ? '80px' : '64px',
+          backdropFilter: 'blur(20px)',
+          height: isAndroid ? '70px' : '64px',
+          zIndex: 1300,
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -78,125 +84,150 @@ const Header = ({
             left: 0,
             right: 0,
             height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.3), transparent)',
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.2), transparent)',
+            background: 'linear-gradient(90deg, transparent, rgba(229, 9, 20, 0.5), transparent)',
           }
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" disableGutters>
           <Toolbar sx={{ 
             justifyContent: 'space-between', 
-            py: isAndroid ? 2 : 1,
-            minHeight: isAndroid ? '80px' : '64px'
+            py: isAndroid ? 1 : 0.5,
+            minHeight: isAndroid ? '70px' : '64px',
+            px: { xs: 2, sm: 3 }
           }}>
             {/* Left Section - Logo and Navigation */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: isAndroid ? 4 : 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, md: 4 } }}>
               <Typography 
                 variant="h5" 
                 component="div" 
                 sx={{ 
                   color: '#E50914',
-                  fontWeight: 'bold',
-                  fontSize: isAndroid ? '1.8rem' : { xs: '1.2rem', sm: '1.5rem' },
+                  fontWeight: 900,
+                  fontSize: { xs: '1.5rem', sm: '1.8rem', md: '2rem' },
                   textTransform: 'uppercase',
-                  letterSpacing: '1px',
-                  textShadow: '0 0 10px rgba(229, 9, 20, 0.3)',
+                  letterSpacing: '2px',
+                  textShadow: '0 0 20px rgba(229, 9, 20, 0.5)',
                   position: 'relative',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.05)',
+                    textShadow: '0 0 30px rgba(229, 9, 20, 0.8)',
+                  },
                   '&::after': {
                     content: '""',
                     position: 'absolute',
-                    bottom: -2,
+                    bottom: -4,
                     left: 0,
                     width: '100%',
-                    height: '2px',
-                    background: 'linear-gradient(90deg, transparent, #E50914, transparent)',
+                    height: '3px',
+                    background: 'linear-gradient(90deg, #E50914, #FF6B6B, #E50914)',
+                    borderRadius: '2px',
+                    animation: 'glow 2s ease-in-out infinite alternate',
+                  },
+                  '@keyframes glow': {
+                    '0%': { boxShadow: '0 0 5px rgba(229, 9, 20, 0.5)' },
+                    '100%': { boxShadow: '0 0 20px rgba(229, 9, 20, 0.8)' }
                   }
                 }}
               >
                 NETFLIX
               </Typography>
               
-              {/* Navigation Buttons - Hidden on Android */}
-              {!isAndroid && (
-                <Box sx={{ display: 'flex', gap: 2 }}>
+              {/* Navigation Buttons - Enhanced for desktop */}
+              {!isMobile && (
+                <Box sx={{ display: 'flex', gap: 1, ml: 2 }}>
                   <Button 
+                    startIcon={<HomeIcon />}
                     color="inherit" 
                     sx={{ 
-                      fontSize: '1rem',
-                      padding: '6px 12px',
+                      fontSize: '0.9rem',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease',
                       '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'translateY(-1px)',
-                        color: '#E50914'
-                      },
-                      transition: 'all 0.2s ease-in-out'
+                        bgcolor: 'rgba(229, 9, 20, 0.15)',
+                        transform: 'translateY(-2px)',
+                        color: '#E50914',
+                        boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                      }
                     }}
                   >
                     Home
                   </Button>
                   <Button 
+                    startIcon={<TvIcon />}
                     color="inherit" 
                     sx={{ 
-                      fontSize: '1rem',
-                      padding: '6px 12px',
+                      fontSize: '0.9rem',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease',
                       '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'translateY(-1px)',
-                        color: '#E50914'
-                      },
-                      transition: 'all 0.2s ease-in-out'
+                        bgcolor: 'rgba(229, 9, 20, 0.15)',
+                        transform: 'translateY(-2px)',
+                        color: '#E50914',
+                        boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                      }
                     }}
                   >
                     TV Shows
                   </Button>
                   <Button 
+                    startIcon={<MovieIcon />}
                     color="inherit" 
                     sx={{ 
-                      fontSize: '1rem',
-                      padding: '6px 12px',
+                      fontSize: '0.9rem',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease',
                       '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'translateY(-1px)',
-                        color: '#E50914'
-                      },
-                      transition: 'all 0.2s ease-in-out'
+                        bgcolor: 'rgba(229, 9, 20, 0.15)',
+                        transform: 'translateY(-2px)',
+                        color: '#E50914',
+                        boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                      }
                     }}
                   >
                     Movies
                   </Button>
                   <Button 
+                    startIcon={<FavoriteIcon />}
                     color="inherit" 
                     sx={{ 
-                      fontSize: '1rem',
-                      padding: '6px 12px',
+                      fontSize: '0.9rem',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease',
                       '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'translateY(-1px)',
-                        color: '#E50914'
-                      },
-                      transition: 'all 0.2s ease-in-out'
+                        bgcolor: 'rgba(229, 9, 20, 0.15)',
+                        transform: 'translateY(-2px)',
+                        color: '#E50914',
+                        boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                      }
                     }}
                   >
-                    New & Popular
+                    My List
                   </Button>
                 </Box>
               )}
             </Box>
 
-            {/* Center Section - Search Bar */}
+            {/* Center Section - Enhanced Search Bar */}
             <Box sx={{ 
               flexGrow: 1, 
               display: 'flex', 
               justifyContent: 'center',
-              mx: isAndroid ? { xs: 2, sm: 3, md: 5 } : { xs: 1, sm: 2, md: 4 }
+              mx: { xs: 2, sm: 3, md: 6 },
+              maxWidth: '600px'
             }}>
               <StyledSearchBar
                 value={searchQuery}
@@ -206,85 +237,153 @@ const Header = ({
               />
             </Box>
 
-            {/* Right Section - Actions */}
+            {/* Right Section - Enhanced Actions */}
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              gap: isAndroid ? 2 : 1
+              gap: { xs: 1, sm: 1.5 }
             }}>
-              {/* API Source Button - Always visible */}
+              {/* API Source Button */}
               <IconButton
                 color="inherit"
                 onClick={handleApiPopupOpen}
                 sx={{
-                  padding: isAndroid ? '12px' : '8px',
+                  padding: { xs: '8px', sm: '10px' },
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
                   '&:hover': { 
-                    bgcolor: 'rgba(229, 9, 20, 0.1)',
-                    transform: 'scale(1.1)'
+                    bgcolor: 'rgba(229, 9, 20, 0.15)',
+                    transform: 'scale(1.1)',
+                    boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
                   },
-                  transition: 'all 0.2s ease-in-out',
                   '& .MuiSvgIcon-root': {
-                    fontSize: isAndroid ? '1.8rem' : { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' }
+                    fontSize: { xs: '1.3rem', sm: '1.5rem' }
                   }
                 }}
               >
                 <LanguageIcon />
               </IconButton>
 
-              {/* Other buttons - Hidden on Android */}
-              {!isAndroid && (
+              {/* Desktop-only buttons */}
+              {!isMobile && (
                 <>
                   <IconButton
                     color="inherit"
                     sx={{
-                      padding: '8px',
+                      padding: '10px',
+                      borderRadius: '12px',
+                      transition: 'all 0.3s ease',
                       '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'scale(1.1)'
-                      },
-                      transition: 'all 0.2s ease-in-out',
-                      '& .MuiSvgIcon-root': {
-                        fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' }
+                        bgcolor: 'rgba(229, 9, 20, 0.15)',
+                        transform: 'scale(1.1)',
+                        boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                      }
+                    }}
+                  >
+                    <SearchIcon />
+                  </IconButton>
+                  <IconButton
+                    color="inherit"
+                    sx={{
+                      padding: '10px',
+                      borderRadius: '12px',
+                      transition: 'all 0.3s ease',
+                      '&:hover': { 
+                        bgcolor: 'rgba(229, 9, 20, 0.15)',
+                        transform: 'scale(1.1)',
+                        boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
                       }
                     }}
                   >
                     <NotificationsIcon />
                   </IconButton>
-                  <IconButton
-                    color="inherit"
-                    sx={{
-                      padding: '8px',
-                      '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'scale(1.1)'
-                      },
-                      transition: 'all 0.2s ease-in-out',
-                      '& .MuiSvgIcon-root': {
-                        fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' }
-                      }
-                    }}
-                  >
-                    <AccountCircleIcon />
-                  </IconButton>
-                  <IconButton
-                    color="inherit"
-                    onClick={handleRefresh}
-                    sx={{
-                      padding: '8px',
-                      '&:hover': { 
-                        bgcolor: 'rgba(229, 9, 20, 0.1)',
-                        transform: 'scale(1.1)'
-                      },
-                      transition: 'all 0.2s ease-in-out',
-                      '& .MuiSvgIcon-root': {
-                        fontSize: { xs: '1.2rem', sm: '1.4rem', md: '1.5rem' }
-                      }
-                    }}
-                  >
-                    <RefreshIcon />
-                  </IconButton>
                 </>
               )}
+
+              {/* Refresh Button */}
+              <IconButton
+                color="inherit"
+                onClick={handleRefresh}
+                sx={{
+                  padding: { xs: '8px', sm: '10px' },
+                  borderRadius: '12px',
+                  transition: 'all 0.3s ease',
+                  '&:hover': { 
+                    bgcolor: 'rgba(229, 9, 20, 0.15)',
+                    transform: 'scale(1.1) rotate(180deg)',
+                    boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                  },
+                  '& .MuiSvgIcon-root': {
+                    fontSize: { xs: '1.3rem', sm: '1.5rem' }
+                  }
+                }}
+              >
+                <RefreshIcon />
+              </IconButton>
+
+              {/* Profile Avatar with Menu */}
+              <IconButton
+                onClick={handleProfileMenuOpen}
+                sx={{
+                  padding: 0,
+                  ml: 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': { 
+                    transform: 'scale(1.1)',
+                    boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
+                  }
+                }}
+              >
+                <Avatar 
+                  sx={{ 
+                    width: { xs: 32, sm: 36 }, 
+                    height: { xs: 32, sm: 36 },
+                    bgcolor: '#E50914',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    border: '2px solid rgba(255, 255, 255, 0.2)'
+                  }}
+                >
+                  U
+                </Avatar>
+              </IconButton>
+
+              {/* Profile Menu */}
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleProfileMenuClose}
+                PaperProps={{
+                  sx: {
+                    bgcolor: 'rgba(20, 20, 20, 0.95)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    mt: 1,
+                    minWidth: 200,
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+                  }
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                <MenuItem onClick={handleProfileMenuClose} sx={{ color: 'white', py: 1.5 }}>
+                  <AccountCircleIcon sx={{ mr: 2 }} />
+                  Profile
+                </MenuItem>
+                <MenuItem onClick={handleProfileMenuClose} sx={{ color: 'white', py: 1.5 }}>
+                  <FavoriteIcon sx={{ mr: 2 }} />
+                  My List
+                </MenuItem>
+                <MenuItem onClick={handleProfileMenuClose} sx={{ color: 'white', py: 1.5 }}>
+                  <HistoryIcon sx={{ mr: 2 }} />
+                  Watch History
+                </MenuItem>
+                <Divider sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)' }} />
+                <MenuItem onClick={handleProfileMenuClose} sx={{ color: 'white', py: 1.5 }}>
+                  Sign Out
+                </MenuItem>
+              </Menu>
             </Box>
           </Toolbar>
         </Container>
@@ -293,4 +392,4 @@ const Header = ({
   );
 };
 
-export default Header; 
+export default Header;

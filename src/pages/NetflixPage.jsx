@@ -1,23 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Grid, Card, CardMedia, CardContent, IconButton, Paper, AppBar, Toolbar, TextField, InputAdornment, Tooltip, Drawer, Button, Chip, ToggleButton, ToggleButtonGroup, Select, MenuItem, useMediaQuery, Dialog, DialogTitle, DialogContent } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import AddIcon from '@mui/icons-material/Add';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import SearchIcon from '@mui/icons-material/Search';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import ClearIcon from '@mui/icons-material/Clear';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import CloseIcon from '@mui/icons-material/Close';
-import StarIcon from '@mui/icons-material/Star';
-import LanguageIcon from '@mui/icons-material/Language';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import MovieIcon from '@mui/icons-material/Movie';
-import TvIcon from '@mui/icons-material/Tv';
-import InfoIcon from '@mui/icons-material/Info';
+import { Box, Typography, Grid, useMediaQuery, useTheme, Fade, Skeleton } from '@mui/material';
 
 // Components
 import Header from '../components/Netflix/Header';
@@ -42,30 +24,31 @@ import userDataManager from '../utils/userDataManager';
 
 const TMDB_API_KEY = 'da914409e3ab4f883504dc0dbf9d9917';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 
 const movieCategories = [
   { title: 'Trending Now', endpoint: '/trending/movie/week' },
   { title: 'Popular on Netflix', endpoint: '/movie/popular' },
   { title: 'New Releases', endpoint: '/movie/now_playing' },
-  { title: 'Top Rated', endpoint: '/movie/top_rated' }
+  { title: 'Top Rated', endpoint: '/movie/top_rated' },
+  { title: 'Action Movies', endpoint: '/discover/movie', params: { with_genres: '28' } },
+  { title: 'Comedy Movies', endpoint: '/discover/movie', params: { with_genres: '35' } }
 ];
 
 const tvShowCategories = [
   { title: 'Trending TV Shows', endpoint: '/trending/tv/week' },
   { title: 'Popular TV Shows', endpoint: '/tv/popular' },
   { title: 'Top Rated TV Shows', endpoint: '/tv/top_rated' },
+  { title: 'Netflix Originals', endpoint: '/discover/tv', params: { with_networks: '213' } },
   { 
     title: 'Trending Anime', 
     endpoint: '/discover/tv',
     params: {
-      with_genres: '16', // Animation genre
-      with_origin_country: 'JP', // Japanese content
-      sort_by: 'popularity.desc',
-      first_air_date_year: new Date().getFullYear(), // Current year
-      with_status: '0' // Returning series
+      with_genres: '16',
+      with_origin_country: 'JP',
+      sort_by: 'popularity.desc'
     }
-  }
+  },
+  { title: 'Crime TV Shows', endpoint: '/discover/tv', params: { with_genres: '80' } }
 ];
 
 export const apiSources = [
@@ -85,9 +68,7 @@ export const getVideoUrl = (movie, apiSourceId) => {
   let url;
   
   if (movie.mediaType === 'tv') {
-    // Check if we have a valid absolute episode number to use
     if (movie.absoluteEpisodeNumber && movie.absoluteEpisodeNumber !== null) {
-      // Using absolute numbering mode - pass only the absolute number for all API sources
       if (apiSourceId === 'hulu' || apiSourceId === 'prime' || apiSourceId === 'Hotstar') {
         url = `${selectedApi.url}/tv/${movie.id}/${movie.currentSeason}/${movie.absoluteEpisodeNumber}?autoPlay=true`;
       } else if (apiSourceId === 'multiembed') {
@@ -102,7 +83,6 @@ export const getVideoUrl = (movie, apiSourceId) => {
         url = `${selectedApi.url}/tv/${movie.id}-${movie.currentSeason}-${movie.absoluteEpisodeNumber}?autoPlay=true`;
       }
     } else {
-      // Using regular season/episode numbering
       const season = movie.currentSeason;
       const episode = movie.currentEpisode;
       
@@ -130,12 +110,38 @@ export const getVideoUrl = (movie, apiSourceId) => {
   } else if (apiSourceId === 'vidfast') {
     url = `${selectedApi.url}/movie/${movie.id}?autoPlay=true`;
   } else {
-    // For movies, just use the movie ID
     url = `${selectedApi.url}/movie/${movie.id}?autoPlay=true`;
   }
   
   return url;
 };
+
+// Loading skeleton component
+const CategorySkeleton = () => (
+  <Box sx={{ mb: 6, px: { xs: 2, sm: 3 } }}>
+    <Skeleton 
+      variant="text" 
+      width={200} 
+      height={40} 
+      sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', mb: 2 }} 
+    />
+    <Box sx={{ display: 'flex', gap: 2, overflowX: 'hidden' }}>
+      {[...Array(6)].map((_, index) => (
+        <Skeleton
+          key={index}
+          variant="rectangular"
+          width={220}
+          height={330}
+          sx={{ 
+            bgcolor: 'rgba(255, 255, 255, 0.1)', 
+            borderRadius: '8px',
+            flex: '0 0 auto'
+          }}
+        />
+      ))}
+    </Box>
+  </Box>
+);
 
 function NetflixPage() {
   // State for content display
@@ -143,7 +149,7 @@ function NetflixPage() {
   const [categories, setCategories] = useState([]);
   const [tvCategories, setTvCategories] = useState([]);
   const [currentFeaturedIndex, setCurrentFeaturedIndex] = useState(0);
-  const [contentType, setContentType] = useState('all'); // 'all', 'movies', 'tv'
+  const [contentType, setContentType] = useState('all');
   
   // UI state
   const [hoveredMovie, setHoveredMovie] = useState(null);
@@ -163,7 +169,7 @@ function NetflixPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState('');
-  const [apiSource, setApiSource] = useState('tmdb'); // Default API source
+  const [apiSource, setApiSource] = useState('tmdb');
   const [isApiPopupOpen, setIsApiPopupOpen] = useState(false);
   
   // TV Show specifics
@@ -175,7 +181,21 @@ function NetflixPage() {
   const [seasonDetails, setSeasonDetails] = useState([]);
 
   // Responsive design
-  const isSmallScreen = useMediaQuery('(max-width:600px)');
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  // Auto-rotate featured content
+  useEffect(() => {
+    if (featuredMovies.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentFeaturedIndex((prev) => 
+          prev === featuredMovies.length - 1 ? 0 : prev + 1
+        );
+      }, 8000); // Change every 8 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [featuredMovies.length]);
 
   // Handlers
   const handleContentTypeChange = (event, newContentType) => {
@@ -209,16 +229,7 @@ function NetflixPage() {
   }, [myList]);
 
   const handlePlay = useCallback((movie) => {
-    // Debug: Log whether we're using absolute numbering or not
     if (movie.mediaType === 'tv') {
-      console.log("Playing TV episode with:", {
-        absoluteNumbering: movie.absoluteEpisodeNumber ? "yes" : "no",
-        absoluteEpisodeNumber: movie.absoluteEpisodeNumber,
-        season: movie.currentSeason || 1,
-        episode: movie.currentEpisode || 1
-      });
-
-      // Ensure TV show has proper episode information
       const updatedMovie = {
         ...movie,
         currentSeason: movie.currentSeason || 1,
@@ -227,7 +238,6 @@ function NetflixPage() {
       };
       
       const url = getVideoUrl(updatedMovie, apiSource);
-      console.log("Generated video URL:", url);
       
       if (url) {
         setCurrentVideoUrl(url);
@@ -239,7 +249,6 @@ function NetflixPage() {
       }
     } else {
       const url = getVideoUrl(movie, apiSource);
-      console.log("Generated video URL:", url);
       
       if (url) {
         setCurrentVideoUrl(url);
@@ -258,36 +267,30 @@ function NetflixPage() {
     const currentSeason = selectedMovie.currentSeason || 1;
     const currentEpisode = selectedMovie.currentEpisode || 1;
     
-    // Get the total episodes in the current season
     const seasonEpisodes = seasonDetails[currentSeason - 1]?.episodes?.length || 0;
     
     let nextSeason = currentSeason;
     let nextEpisode = currentEpisode + 1;
     
-    // If we're at the end of the season, move to the next season
     if (nextEpisode > seasonEpisodes) {
       nextSeason = currentSeason + 1;
       nextEpisode = 1;
       
-      // If we're at the end of the series, wrap back to season 1
       if (nextSeason > totalSeasons) {
         nextSeason = 1;
       }
     }
     
-    // Update the selected movie with new episode info
     const updatedMovie = {
       ...selectedMovie,
       currentSeason: nextSeason,
       currentEpisode: nextEpisode,
-      absoluteEpisodeNumber: null // Reset absolute numbering when using next episode
+      absoluteEpisodeNumber: null
     };
     
-    // Update states
     setSelectedSeason(nextSeason);
     setSelectedEpisode(nextEpisode);
     
-    // Generate new video URL and update player
     const newUrl = getVideoUrl(updatedMovie, apiSource);
     setSelectedMovie(updatedMovie);
     setCurrentVideoUrl(newUrl);
@@ -299,11 +302,9 @@ function NetflixPage() {
     let targetSeason = seasonNumber;
     let targetEpisode = episodeNumber;
     
-    // If no season is provided, use absolute episode numbering
     if (seasonNumber === undefined) {
       let episodesCount = 0;
       
-      // Find the correct season and episode
       for (let i = 0; i < seasonDetails.length; i++) {
         const seasonEpisodes = seasonDetails[i]?.episodes?.length || 0;
         if (episodesCount + seasonEpisodes >= episodeNumber) {
@@ -314,38 +315,32 @@ function NetflixPage() {
         episodesCount += seasonEpisodes;
       }
     } else {
-      // Validate season number
       if (targetSeason > totalSeasons) {
         targetSeason = 1;
         targetEpisode = 1;
       }
       
-      // Validate episode number for the selected season
       const maxEpisodes = seasonDetails[targetSeason - 1]?.episodes?.length || 0;
       if (targetEpisode > maxEpisodes) {
         targetEpisode = 1;
       }
     }
     
-    // Update the selected movie with new episode info
     const updatedMovie = {
       ...selectedMovie,
       currentSeason: targetSeason,
       currentEpisode: targetEpisode,
-      absoluteEpisodeNumber: seasonNumber === undefined ? episodeNumber : null // Only set absolute number if season wasn't provided
+      absoluteEpisodeNumber: seasonNumber === undefined ? episodeNumber : null
     };
     
-    // Update states
     setSelectedSeason(targetSeason);
     setSelectedEpisode(targetEpisode);
     
-    // Generate new video URL and update player
     const newUrl = getVideoUrl(updatedMovie, apiSource);
     setSelectedMovie(updatedMovie);
     setCurrentVideoUrl(newUrl);
   }, [selectedMovie, seasonDetails, totalSeasons, apiSource]);
 
-  // Add effect to update video URL when API source changes
   useEffect(() => {
     if (selectedMovie && isPlayerOpen) {
       const newUrl = getVideoUrl(selectedMovie, apiSource);
@@ -375,16 +370,14 @@ function NetflixPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch featured content
-      const featuredContent = await fetchFeaturedContent();
+      const [featuredContent, movieCategoriesData, tvCategoriesData] = await Promise.all([
+        fetchFeaturedContent(),
+        fetchCategoriesData(movieCategories, 'movie'),
+        fetchCategoriesData(tvShowCategories, 'tv')
+      ]);
+
       setFeaturedMovies(featuredContent);
-
-      // Fetch movie categories
-      const movieCategoriesData = await fetchCategoriesData(movieCategories, 'movie');
       setCategories(movieCategoriesData);
-
-      // Fetch TV show categories
-      const tvCategoriesData = await fetchCategoriesData(tvShowCategories, 'tv');
       setTvCategories(tvCategoriesData);
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -413,12 +406,10 @@ function NetflixPage() {
     }
   }, []);
 
-  // Fetch data when component mounts or API source changes
   useEffect(() => {
     fetchMovies();
   }, [fetchMovies]);
 
-  // Debounce search
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       handleSearch(searchQuery);
@@ -427,7 +418,6 @@ function NetflixPage() {
     return () => clearTimeout(debounceTimer);
   }, [searchQuery, handleSearch]);
 
-  // Fetch TV show details when selected movie changes
   useEffect(() => {
     if (selectedMovie && selectedMovie.mediaType === 'tv') {
       const fetchTvShowDetails = async () => {
@@ -437,20 +427,18 @@ function NetflixPage() {
           setTotalEpisodes(details.totalEpisodes);
           setTotalSeasons(details.totalSeasons);
           setSeasonDetails(details.seasonDetails);
-    } catch (error) {
-      console.error('Error fetching show details:', error);
-    }
-  };
+        } catch (error) {
+          console.error('Error fetching show details:', error);
+        }
+      };
 
       fetchTvShowDetails();
     }
   }, [selectedMovie]);
 
-  // Add useEffect to load user data
   useEffect(() => {
     const userData = userDataManager.getUserData();
     setMyList(userData.myList);
-    // You can load other user data here as needed
   }, []);
 
   const fetchMoreMovies = async (categoryId, page, mediaType = 'movie') => {
@@ -506,18 +494,40 @@ function NetflixPage() {
     }
   };
 
-  // Loading and error states
+  // Loading state
   if (loading) {
     return (
       <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        minHeight: '100vh',
         bgcolor: '#141414',
-        color: 'white'
+        minHeight: '100vh',
+        pt: 8
       }}>
-        <Typography variant="h4">Loading...</Typography>
+        <Header
+          searchQuery={searchQuery}
+          setSearchQuery={handleSearchQueryChange}
+          handleClearSearch={handleClearSearch}
+          handleRefresh={fetchMovies}
+          handleApiPopupOpen={handleApiPopupOpen}
+        />
+        
+        {/* Featured content skeleton */}
+        <Box sx={{ mb: 6 }}>
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height="80vh"
+            sx={{ 
+              bgcolor: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: { xs: 0, sm: '16px' },
+              mx: { xs: 0, sm: 2 }
+            }}
+          />
+        </Box>
+
+        {/* Category skeletons */}
+        {[...Array(4)].map((_, index) => (
+          <CategorySkeleton key={index} />
+        ))}
       </Box>
     );
   }
@@ -534,14 +544,13 @@ function NetflixPage() {
         flexDirection: 'column',
         gap: 2
       }}>
-        <Typography variant="h4">Error Loading Movies</Typography>
+        <Typography variant="h4">Error Loading Content</Typography>
         <Typography variant="body1">{error}</Typography>
       </Box>
     );
   }
 
-  // Render appropriate filter based on content type
-  const getContentFilter = (mediaType) => {
+  const getContentFilter = () => {
     switch (contentType) {
       case 'movies': return movieTypeFilter;
       case 'tv': return tvTypeFilter;
@@ -555,15 +564,8 @@ function NetflixPage() {
         bgcolor: '#141414',
         minHeight: '100vh',
         position: 'relative',
-        padding: { xs: '5px', sm: '10px' },
-        animation: 'fadeIn 0.8s ease-out',
-        '@keyframes fadeIn': {
-          '0%': { opacity: 0 },
-          '100%': { opacity: 1 },
-        },
-        scrollBehavior: 'smooth',
-        overflowY: 'auto',
-        height: '100vh',
+        overflow: 'hidden auto',
+        scrollBehavior: 'smooth'
       }}
     >
       {/* Header */}
@@ -575,17 +577,21 @@ function NetflixPage() {
         handleApiPopupOpen={handleApiPopupOpen}
       />
 
-      <Box sx={{ pt: 8, pb: 2 }}>
-        <Grid container spacing={1} sx={{ flexDirection: { xs: 'column', sm: 'row' } }}>
-          {isSearching ? (
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', color: 'white' }}>
-                <Typography variant="h4">Searching...</Typography>
-              </Box>
-            </Grid>
-          ) : searchResults.length > 0 ? (
-            <Grid item xs={12}>
-              {/* Search Results */}
+      {/* Main Content */}
+      <Box sx={{ pt: { xs: 9, sm: 8 }, pb: 10 }}>
+        {isSearching ? (
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            minHeight: '50vh', 
+            color: 'white' 
+          }}>
+            <Typography variant="h4">Searching...</Typography>
+          </Box>
+        ) : searchResults.length > 0 ? (
+          <Fade in timeout={500}>
+            <div>
               <SearchResults
                 searchResults={searchResults}
                 hoveredMovie={hoveredMovie}
@@ -597,12 +603,14 @@ function NetflixPage() {
                 setSelectedMovie={setSelectedMovie}
                 setIsDetailsOpen={setIsDetailsOpen}
               />
-            </Grid>
-          ) : (
-            <>
+            </div>
+          </Fade>
+        ) : (
+          <Fade in timeout={800}>
+            <div>
               {/* Featured Content */}
               {contentType !== 'tv' && featuredMovies.some(movie => movie.mediaType === 'movie') && (
-                <Grid item xs={12}>
+                <Box sx={{ mb: { xs: 4, sm: 6 } }}>
                   <FeaturedContent
                     featuredMovies={featuredMovies}
                     currentFeaturedIndex={currentFeaturedIndex}
@@ -613,73 +621,69 @@ function NetflixPage() {
                     setSelectedMovie={setSelectedMovie}
                     setIsDetailsOpen={setIsDetailsOpen}
                   />
-                </Grid>
+                </Box>
               )}
 
               {/* My List */}
               {myList.length > 0 && (
-                <Grid item xs={12}>
-                  <MovieList
-                    title="My List"
-                    movies={myList}
-                    categoryId="myList"
-                    hoveredMovie={hoveredMovie}
-                    setHoveredMovie={setHoveredMovie}
-                    handlePlay={handlePlay}
-                    toggleMyList={toggleMyList}
-                    isInMyList={isInMyList}
-                    formatDuration={formatDuration}
-                    setSelectedMovie={setSelectedMovie}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    contentFilter={getContentFilter()}
-                  />
-                </Grid>
+                <MovieList
+                  title="My List"
+                  movies={myList}
+                  categoryId="myList"
+                  hoveredMovie={hoveredMovie}
+                  setHoveredMovie={setHoveredMovie}
+                  handlePlay={handlePlay}
+                  toggleMyList={toggleMyList}
+                  isInMyList={isInMyList}
+                  formatDuration={formatDuration}
+                  setSelectedMovie={setSelectedMovie}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  contentFilter={getContentFilter()}
+                />
               )}
 
               {/* Movie Categories */}
               {(contentType === 'all' || contentType === 'movies') && categories.map((category, categoryIndex) => (
-                <Grid item xs={12} key={categoryIndex}>
-                  <MovieList
-                    title={category.title}
-                    movies={category.movies}
-                    categoryId={`category-${categoryIndex}`}
-                    backdropPath={category.backdrop_path}
-                    hoveredMovie={hoveredMovie}
-                    setHoveredMovie={setHoveredMovie}
-                    handlePlay={handlePlay}
-                    toggleMyList={toggleMyList}
-                    isInMyList={isInMyList}
-                    formatDuration={formatDuration}
-                    setSelectedMovie={setSelectedMovie}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    onLoadMore={(page) => fetchMoreMovies(category.title, page, 'movie')}
-                  />
-                </Grid>
+                <MovieList
+                  key={`movie-${categoryIndex}`}
+                  title={category.title}
+                  movies={category.movies}
+                  categoryId={`category-${categoryIndex}`}
+                  backdropPath={category.backdrop_path}
+                  hoveredMovie={hoveredMovie}
+                  setHoveredMovie={setHoveredMovie}
+                  handlePlay={handlePlay}
+                  toggleMyList={toggleMyList}
+                  isInMyList={isInMyList}
+                  formatDuration={formatDuration}
+                  setSelectedMovie={setSelectedMovie}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  onLoadMore={(page) => fetchMoreMovies(category.title, page, 'movie')}
+                />
               ))}
 
               {/* TV Show Categories */}
               {(contentType === 'all' || contentType === 'tv') && tvCategories.map((category, categoryIndex) => (
-                <Grid item xs={12} key={`tv-${categoryIndex}`}>
-                  <MovieList
-                    title={category.title}
-                    movies={category.movies}
-                    categoryId={`tv-category-${categoryIndex}`}
-                    backdropPath={category.backdrop_path}
-                    hoveredMovie={hoveredMovie}
-                    setHoveredMovie={setHoveredMovie}
-                    handlePlay={handlePlay}
-                    toggleMyList={toggleMyList}
-                    isInMyList={isInMyList}
-                    formatDuration={formatDuration}
-                    setSelectedMovie={setSelectedMovie}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    onLoadMore={(page) => fetchMoreMovies(category.title, page, 'tv')}
-                  />
-                </Grid>
+                <MovieList
+                  key={`tv-${categoryIndex}`}
+                  title={category.title}
+                  movies={category.movies}
+                  categoryId={`tv-category-${categoryIndex}`}
+                  backdropPath={category.backdrop_path}
+                  hoveredMovie={hoveredMovie}
+                  setHoveredMovie={setHoveredMovie}
+                  handlePlay={handlePlay}
+                  toggleMyList={toggleMyList}
+                  isInMyList={isInMyList}
+                  formatDuration={formatDuration}
+                  setSelectedMovie={setSelectedMovie}
+                  setIsDetailsOpen={setIsDetailsOpen}
+                  onLoadMore={(page) => fetchMoreMovies(category.title, page, 'tv')}
+                />
               ))}
-            </>
-          )}
-        </Grid>
+            </div>
+          </Fade>
+        )}
       </Box>
       
       {/* Movie Details */}
@@ -712,20 +716,6 @@ function NetflixPage() {
         handleContentTypeChange={handleContentTypeChange}
       />
 
-      {/* Footer Shadow */}
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '25px',
-          bgcolor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 999,
-          backdropFilter: 'blur(10px)',
-        }}
-      />
-
       {/* API Source Popup */}
       <ApiSourcePopup
         open={isApiPopupOpen}
@@ -746,9 +736,12 @@ function NetflixPage() {
         onPlayEpisode={handlePlayEpisode}
         currentSeason={selectedMovie?.currentSeason}
         currentEpisode={selectedMovie?.currentEpisode}
+        seasonDetails={seasonDetails}
+        totalSeasons={totalSeasons}
+        totalEpisodes={totalEpisodes}
       />
     </Box>
   );
 }
 
-export default NetflixPage; 
+export default NetflixPage;
