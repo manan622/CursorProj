@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite'
+import { webcrypto as crypto } from 'crypto'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
+
+if (!globalThis.crypto) {
+  globalThis.crypto = crypto
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
