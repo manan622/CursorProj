@@ -625,23 +625,6 @@ function NetflixPage() {
               )}
 
               {/* My List */}
-              {myList.length > 0 && (
-                <MovieList
-                  title="My List"
-                  movies={myList}
-                  categoryId="myList"
-                  hoveredMovie={hoveredMovie}
-                  setHoveredMovie={setHoveredMovie}
-                  handlePlay={handlePlay}
-                  toggleMyList={toggleMyList}
-                  isInMyList={isInMyList}
-                  formatDuration={formatDuration}
-                  setSelectedMovie={setSelectedMovie}
-                  setIsDetailsOpen={setIsDetailsOpen}
-                  contentFilter={getContentFilter()}
-                />
-              )}
-
               {/* Movie Categories */}
               {(contentType === 'all' || contentType === 'movies') && categories.map((category, categoryIndex) => (
                 <MovieList

@@ -173,7 +173,7 @@ const ContentTypeToggle = ({ contentType, handleContentTypeChange }) => {
           </Box>
 
           {/* Trending indicator */}
-          <motion.div
+          {/* <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.5, type: "spring", stiffness: 500 }}
@@ -200,7 +200,7 @@ const ContentTypeToggle = ({ contentType, handleContentTypeChange }) => {
                 }
               }}
             />
-          </motion.div>
+          </motion.div> */}
         </Box>
       </motion.div>
     </AnimatePresence>

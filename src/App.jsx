@@ -3,6 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppRoutes from './routes';
+import { OfflineBanner } from './components/OfflineBanner';
 
 const theme = createTheme({
   palette: {
@@ -37,6 +38,7 @@ const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <OfflineBanner />
       <Router>
         <AppRoutes />
       </Router>

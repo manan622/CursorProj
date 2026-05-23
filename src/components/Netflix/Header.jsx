@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   AppBar, 
   Toolbar, 
@@ -45,6 +46,7 @@ const Header = ({
   handleRefresh,
   handleApiPopupOpen 
 }) => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const isAndroid = useMediaQuery('(max-width:600px) and (hover:none) and (pointer:coarse)');
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -154,10 +156,11 @@ const Header = ({
                         boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
                       }
                     }}
+                    onClick={() => navigate('/')}
                   >
                     Home
                   </Button>
-                  <Button 
+                  {/* <Button 
                     startIcon={<TvIcon />}
                     color="inherit" 
                     sx={{ 
@@ -196,7 +199,7 @@ const Header = ({
                     }}
                   >
                     Movies
-                  </Button>
+                  </Button> */}
                   <Button 
                     startIcon={<FavoriteIcon />}
                     color="inherit" 
@@ -214,6 +217,7 @@ const Header = ({
                         boxShadow: '0 4px 15px rgba(229, 9, 20, 0.3)'
                       }
                     }}
+                    onClick={() => navigate('/my-list')}
                   >
                     My List
                   </Button>
@@ -227,7 +231,7 @@ const Header = ({
               display: 'flex', 
               justifyContent: 'center',
               mx: { xs: 2, sm: 3, md: 6 },
-              maxWidth: '600px'
+              maxWidth: '700px'
             }}>
               <StyledSearchBar
                 value={searchQuery}
@@ -265,7 +269,7 @@ const Header = ({
               </IconButton>
 
               {/* Desktop-only buttons */}
-              {!isMobile && (
+              {/* {!isMobile && (
                 <>
                   <IconButton
                     color="inherit"
@@ -298,7 +302,7 @@ const Header = ({
                     <NotificationsIcon />
                   </IconButton>
                 </>
-              )}
+              )} */}
 
               {/* Refresh Button */}
               <IconButton
@@ -371,7 +375,13 @@ const Header = ({
                   <AccountCircleIcon sx={{ mr: 2 }} />
                   Profile
                 </MenuItem>
-                <MenuItem onClick={handleProfileMenuClose} sx={{ color: 'white', py: 1.5 }}>
+                <MenuItem
+                  onClick={() => {
+                    handleProfileMenuClose();
+                    navigate('/my-list');
+                  }}
+                  sx={{ color: 'white', py: 1.5, cursor: 'pointer' }}
+                >
                   <FavoriteIcon sx={{ mr: 2 }} />
                   My List
                 </MenuItem>
