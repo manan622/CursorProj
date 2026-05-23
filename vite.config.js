@@ -57,6 +57,10 @@ export default defineConfig({
   resolve: {
     alias: {
       'styled-components': path.resolve(__dirname, 'node_modules/styled-components'),
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+      '@emotion/react': path.resolve(__dirname, 'node_modules/@emotion/react'),
+      '@emotion/styled': path.resolve(__dirname, 'node_modules/@emotion/styled'),
     },
   },
   build: {
@@ -81,6 +85,10 @@ export default defineConfig({
     host: true, // Listen on all local IPs
     port: 5173, // Default port
     strictPort: true, // Don't try other ports if 5173 is taken
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws'
+    }
   }
 })
 

@@ -275,7 +275,7 @@ const MovieList = ({
                 style={{
                   ...(isExpanded ? {} : {
                     flex: '0 0 auto',
-                    width: isMobile ? '150px' : '220px'
+                    width: isMobile ? '180px' : '220px'
                   })
                 }}
               >

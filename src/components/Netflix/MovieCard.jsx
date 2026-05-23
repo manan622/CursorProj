@@ -181,19 +181,19 @@ const MovieCard = memo(({
           height: '100%'
         } : {
           width: { 
-            xs: isAndroid ? '150px' : '130px', 
+            xs: isAndroid ? '180px' : '150px', 
             sm: '170px', 
             md: '190px', 
             lg: '220px' 
           },
           maxWidth: { 
-            xs: isAndroid ? '150px' : '130px', 
+            xs: isAndroid ? '180px' : '150px', 
             sm: '170px', 
             md: '190px', 
             lg: '220px' 
           },
           minWidth: { 
-            xs: isAndroid ? '150px' : '130px', 
+            xs: isAndroid ? '180px' : '150px', 
             sm: '170px', 
             md: '190px', 
             lg: '220px' 
@@ -208,6 +208,8 @@ const MovieCard = memo(({
           height: '100%',
           bgcolor: 'transparent',
           cursor: 'pointer',
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           boxShadow: 'none',
           '&:hover': {
@@ -411,7 +413,7 @@ const MovieCard = memo(({
                 position: 'relative',
                 zIndex: 3
               }}>
-                <Tooltip title="Play">
+                <Tooltip title="Play" disableTouchListener={isAndroid} disableHoverListener={isAndroid}>
                   <IconButton
                     size="small"
                     onClick={(e) => {
@@ -426,6 +428,8 @@ const MovieCard = memo(({
                         sm: '6px', 
                         md: '8px' 
                       },
+                      touchAction: 'manipulation',
+                      userSelect: 'none',
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'
@@ -448,7 +452,7 @@ const MovieCard = memo(({
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title={isInMyList(movie.id) ? "Remove from My List" : "Add to My List"}>
+                <Tooltip title={isInMyList(movie.id) ? "Remove from My List" : "Add to My List"} disableTouchListener={isAndroid} disableHoverListener={isAndroid}>
                   <IconButton
                     size="small"
                     onClick={(e) => {
@@ -463,6 +467,8 @@ const MovieCard = memo(({
                         sm: '6px', 
                         md: '8px' 
                       },
+                      touchAction: 'manipulation',
+                      userSelect: 'none',
                       border: isInMyList(movie.id) 
                         ? '1px solid rgba(229, 9, 20, 0.5)'
                         : '1px solid rgba(255, 255, 255, 0.2)',
@@ -494,7 +500,7 @@ const MovieCard = memo(({
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="More Info">
+                <Tooltip title="More Info" disableTouchListener={isAndroid} disableHoverListener={isAndroid}>
                   <IconButton
                     size="small"
                     onClick={(e) => {
@@ -510,6 +516,8 @@ const MovieCard = memo(({
                         sm: '6px', 
                         md: '8px' 
                       },
+                      touchAction: 'manipulation',
+                      userSelect: 'none',
                       '&:hover': { 
                         bgcolor: 'rgba(255, 255, 255, 0.25)',
                         transform: 'scale(1.1)'

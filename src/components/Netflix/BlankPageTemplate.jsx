@@ -47,6 +47,9 @@ const BlankPageTemplate = () => {
         // If we have movie data in location state, use it
         if (location.state?.movie) {
           const stateMovie = location.state.movie;
+          setCurrentSeason(stateMovie.currentSeason || 1);
+          setCurrentEpisode(stateMovie.currentEpisode || 1);
+          setApiSource(location.state.apiSource || 'tmdb');
           
           // If it's a TV show, fetch season details
           if (stateMovie.mediaType === 'tv') {
@@ -307,13 +310,28 @@ const BlankPageTemplate = () => {
       ...movieData,
       currentSeason: currentSeason,
       currentEpisode: currentEpisode,
-      absoluteEpisodeNumber: useAbsoluteNumbering ? nextAbsoluteNumber : null
+      absoluteEpisodeNumber: useAbsoluteNumbering ? absoluteNumber : null
     };
 
     const url = getVideoUrl(updatedMovie, apiSource);
     setCurrentVideoUrl(url);
     setIsPlayerOpen(true);
   };
+
+  useEffect(() => {
+    if (!movieData || !location.state?.openPlayer) return;
+    const updatedMovie = {
+      ...movieData,
+      currentSeason,
+      currentEpisode,
+      absoluteEpisodeNumber: movieData.absoluteEpisodeNumber || null
+    };
+    const url = getVideoUrl(updatedMovie, apiSource);
+    if (url) {
+      setCurrentVideoUrl(url);
+      setIsPlayerOpen(true);
+    }
+  }, [movieData, location.state?.openPlayer, currentSeason, currentEpisode, apiSource]);
 
   const handleNextEpisode = () => {
     if (!movieData || movieData.mediaType !== 'tv') return;

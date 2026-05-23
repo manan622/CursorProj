@@ -21,6 +21,7 @@ import {
   allTypeFilter
 } from '../utils/netflixUtils';
 import userDataManager from '../utils/userDataManager';
+import { useNavigate } from 'react-router-dom';
 
 const TMDB_API_KEY = 'da914409e3ab4f883504dc0dbf9d9917';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -160,6 +161,32 @@ function NetflixPage() {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+
+  const handleSearchQueryChange = (event) => {
+    const value = event?.target?.value ?? event;
+    setSearchQuery(value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearching(false);
+  };
+
+  const isInMyList = (movieId) => {
+    return myList.some(movie => movie.id === movieId);
+  };
+
+  const toggleMyList = (movie) => {
+    const inList = isInMyList(movie.id);
+    if (inList) {
+      userDataManager.removeFromMyList(movie.id);
+      setMyList(prev => prev.filter(item => item.id !== movie.id));
+    } else {
+      userDataManager.addToMyList(movie);
+      setMyList(prev => [...prev, movie]);
+    }
+  };
   
   // User personalization
   const [myList, setMyList] = useState([]);
@@ -171,6 +198,7 @@ function NetflixPage() {
   const [currentVideoUrl, setCurrentVideoUrl] = useState('');
   const [apiSource, setApiSource] = useState('tmdb');
   const [isApiPopupOpen, setIsApiPopupOpen] = useState(false);
+  const navigate = useNavigate();
   
   // TV Show specifics
   const [selectedSeason, setSelectedSeason] = useState('1');
@@ -204,62 +232,22 @@ function NetflixPage() {
     }
   };
 
-  const handleSearchQueryChange = (event) => {
-    setSearchQuery(event.target.value);
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setSearchResults([]);
-  };
-
-  const toggleMyList = (movie) => {
-    const isInList = myList.some(item => item.id === movie.id);
-    if (isInList) {
-      setMyList(myList.filter(item => item.id !== movie.id));
-      userDataManager.removeFromMyList(movie.id);
-    } else {
-      setMyList([...myList, movie]);
-      userDataManager.addToMyList(movie);
-    }
-  };
-
-  const isInMyList = useCallback((movieId) => {
-    return myList.some(movie => movie.id === movieId);
-  }, [myList]);
-
   const handlePlay = useCallback((movie) => {
-    if (movie.mediaType === 'tv') {
-      const updatedMovie = {
-        ...movie,
-        currentSeason: movie.currentSeason || 1,
-        currentEpisode: movie.currentEpisode || 1,
-        absoluteEpisodeNumber: movie.absoluteEpisodeNumber || null
-      };
-      
-      const url = getVideoUrl(updatedMovie, apiSource);
-      
-      if (url) {
-        setCurrentVideoUrl(url);
-        setSelectedMovie(updatedMovie);
-        setIsPlayerOpen(true);
-      } else {
-        setSelectedMovie(updatedMovie);
-        setIsDetailsOpen(true);
+    const updatedMovie = {
+      ...movie,
+      currentSeason: movie.currentSeason || 1,
+      currentEpisode: movie.currentEpisode || 1,
+      absoluteEpisodeNumber: movie.absoluteEpisodeNumber || null,
+      mediaType: movie.mediaType || (movie.first_air_date ? 'tv' : 'movie')
+    };
+    navigate(`/movie/${movie.id}`, {
+      state: {
+        movie: updatedMovie,
+        apiSource,
+        openPlayer: true
       }
-    } else {
-      const url = getVideoUrl(movie, apiSource);
-      
-      if (url) {
-        setCurrentVideoUrl(url);
-        setSelectedMovie(movie);
-        setIsPlayerOpen(true);
-      } else {
-        setSelectedMovie(movie);
-        setIsDetailsOpen(true);
-      }
-    }
-  }, [apiSource]);
+    });
+  }, [apiSource, navigate]);
 
   const handleNextEpisode = useCallback(() => {
     if (!selectedMovie || selectedMovie.mediaType !== 'tv') return;

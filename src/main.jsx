@@ -11,6 +11,13 @@ createRoot(document.getElementById('root')).render(
 
 // Register service worker for offline support only in production
 if ('serviceWorker' in navigator) {
+  if (import.meta.env.DEV) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        registration.unregister();
+      });
+    });
+  }
   window.addEventListener('load', async () => {
     if (import.meta.env.PROD) {
       try {
