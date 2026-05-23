@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 
@@ -7,6 +8,40 @@ import path from 'path'
 export default defineConfig({
   plugins: [
     react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.svg', 'icon-192x192.png', 'icon-512x512.png'],
+      manifestFilename: 'manifest.json',
+      manifest: {
+        name: 'E-Shop',
+        short_name: 'E-Shop',
+        description: 'A modern e-commerce platform with Netflix-style interface',
+        theme_color: '#e50914',
+        background_color: '#141414',
+        display: 'standalone',
+        scope: '/',
+        start_url: '/',
+        orientation: 'portrait-primary',
+        icons: [
+          {
+            src: '/icon-192x192.png',
+            sizes: '192x192',
+            type: 'image/png'
+          },
+          {
+            src: '/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png'
+          },
+          {
+            src: '/icon-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          }
+        ]
+      }
+    }),
     visualizer({
       open: true,
       gzipSize: true,

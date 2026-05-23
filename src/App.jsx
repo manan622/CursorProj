@@ -4,6 +4,7 @@ import { ThemeProvider, createTheme } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import AppRoutes from './routes';
 import { OfflineBanner } from './components/OfflineBanner';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const theme = createTheme({
   palette: {
@@ -39,6 +40,7 @@ const App = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <OfflineBanner />
+      <PWAInstallPrompt />
       <Router>
         <AppRoutes />
       </Router>
